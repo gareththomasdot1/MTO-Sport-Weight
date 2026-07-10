@@ -3,107 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Performance PWA v2.4</title>
+    <title>REGC Performance v2.5</title>
     <style>
-        :root { --airbus-cyan: #00f2ff; --airbus-green: #00ff00; --airbus-magenta: #ff00ff; --airbus-amber: #ff9900; --airbus-red: #ff3333; --bg-dark: #0b0e14; --panel-bg: rgba(26, 31, 38, 0.95); --sidebar-bg: #15191f; }
-        body, html { margin: 0; padding: 0; background: var(--bg-dark); color: #e0e0e0; font-family: sans-serif; height: 100dvh; width: 100vw; overflow: hidden; }
-        .dashboard { display: flex; flex-direction: column; height: 100%; width: 100%; }
-        header { height: 45px; background: #111; border-bottom: 2px solid #333; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; }
-        .version-tag { color: var(--airbus-magenta); font-family: monospace; font-size: 0.8rem; font-weight: bold; }
-        .main-view { display: flex; flex: 1; gap: 5px; padding: 5px; overflow: hidden; }
-        .panel-box { background: black; border: 1px solid #444; border-radius: 4px; padding: 15px; flex: 1; position: relative; overflow-y: auto; }
-        .label { position: absolute; top: 5px; left: 5px; background: rgba(0,0,0,0.8); color: var(--airbus-cyan); padding: 2px 5px; font-size: 0.6rem; border: 1px solid var(--airbus-cyan); }
-        .form-group { margin-bottom: 15px; }
-        .form-label { display: block; color: #aaa; font-size: 0.7rem; text-transform: uppercase; margin-bottom: 5px; }
-        input[type="range"] { width: 100%; accent-color: var(--airbus-cyan); }
-        table { width: 100%; border-collapse: collapse; font-family: monospace; font-size: 0.8rem; }
-        td { padding: 8px 4px; border-bottom: 1px solid #222; }
-        .val-out { color: var(--airbus-green); font-weight: bold; }
-        footer { height: 50px; background: #000; border-top: 2px solid var(--airbus-cyan); display: grid; grid-template-columns: repeat(4, 1fr); align-items: center; }
-        .met-item { text-align: center; border-right: 1px solid #222; }
-        .met-lbl { color: #888; font-size: 0.5rem; text-transform: uppercase; }
-        .val { display: block; color: var(--airbus-green); font-weight: bold; }
+        :root { --airbus-cyan: #00f2ff; --airbus-green: #00ff00; --bg-dark: #0b0e14; }
+        body { margin: 0; background: var(--bg-dark); color: #fff; font-family: monospace; height: 100dvh; overflow: hidden; }
+        .dashboard { display: flex; flex-direction: column; height: 100%; }
+        .panel { padding: 15px; border: 1px solid #444; margin: 5px; border-radius: 4px; }
+        .val { color: var(--airbus-green); font-weight: bold; }
+        input { background: #000; color: var(--airbus-green); border: 1px solid #444; }
+        footer { display: grid; grid-template-columns: repeat(4, 1fr); text-align: center; border-top: 2px solid var(--airbus-cyan); padding: 10px 0; }
     </style>
 </head>
 <body>
-
 <div class="dashboard">
-    <header>
-        <div style="font-weight:bold;">FLIGHT PERFORMANCE v2.3</div>
-        <div class="version-tag">v2.3</div>
-    </header>
-
-    <div class="main-view">
-        <div class="panel-box">
-            <div class="label">INPUTS</div>
-            <br>
-            <div class="form-group">
-                <span class="form-label">Pilot (kg): <span id="val-pilot" style="color:var(--airbus-cyan)">90</span></span>
-                <input type="range" id="pilotSlider" min="0" max="150" value="90" oninput="syncWeight('pilot', this.value)">
-            </div>
-            <div class="form-group">
-                <span class="form-label">Pax (kg): <span id="val-passenger" style="color:var(--airbus-cyan)">0</span></span>
-                <input type="range" id="passengerSlider" min="0" max="150" value="0" oninput="syncWeight('passenger', this.value)">
-            </div>
-        </div>
-
-        <div class="panel-box">
-            <div class="label">MATRIX</div>
-            <table>
-                <tr><td>AIRFIELD</td><td id="outAirfield" class="val-out">--</td></tr>
-                <tr><td>TOTAL AUW</td><td id="outTotalWeight" class="val-out">--</td></tr>
-                <tr><td>DENSITY ALT</td><td id="outDensityAlt" class="val-out">--</td></tr>
-                <tr><td>RUNWAY</td><td id="outRunways" class="val-out">--</td></tr>
-                <tr><td>ADVISORY</td><td id="outStatus" class="val-out">--</td></tr>
-            </table>
-        </div>
+    <div class="panel">
+        <h3>FLIGHT LOADING</h3>
+        Pilot (kg): <input type="range" id="pilotSlider" min="0" max="150" value="90" oninput="calculateFlightSafety()">
+        <span id="val-pilot">90</span><br>
+        Pax (kg): <input type="range" id="passengerSlider" min="0" max="150" value="0" oninput="calculateFlightSafety()">
+        <span id="val-passenger">0</span>
     </div>
-
-    <footer>
-        <div class="met-item"><div class="met-lbl">WIND</div><span id="headwind-val" class="val">--</span></div>
-        <div class="met-item"><div class="met-lbl">TODR</div><span id="todr-val" class="val">--</span></div>
-        <div class="met-item"><div class="met-lbl">RWY</div><span id="rwy" class="val">--</span></div>
-        <div class="met-item"><div class="met-lbl">API</div><span id="met-sync-status" class="val">OK</span></div>
+    <div class="panel">
+        <h3>COMPUTATION</h3>
+        <div>AUW: <span id="outTotalWeight" class="val">--</span></div>
+        <div>Density Alt: <span id="outDensityAlt" class="val">--</span></div>
+        <div>API Data: <span id="api-debug" style="font-size: 0.7rem; color: #888;">WAITING...</span></div>
+    </div>
+    <footer id="footer">
+        <div>WIND<br><span id="headwind-val" class="val">--</span></div>
+        <div>TODR<br><span id="todr-val" class="val">--</span></div>
+        <div>RWY<br><span id="rwy" class="val">--</span></div>
+        <div>STATUS<br><span id="met-sync-status" class="val">--</span></div>
     </footer>
 </div>
 
 <script>
-const airfieldDatabase = { "EGXU": { name: "Rufforth East", runways: [50, 230], length: 510, elevation: 50, lat: 53.949, lon: -1.187 } };
-
-function syncWeight(type, value) {
-    document.getElementById('val-' + type).innerText = value;
-    calculateFlightSafety();
-}
+const airfield = { lat: 53.949, lon: -1.187, elev: 50, baseTodr: 200 };
 
 async function fetchLiveWeather() {
     const statusEl = document.getElementById('met-sync-status');
-    statusEl.innerText = "SYNCING";
+    const debugEl = document.getElementById('api-debug');
+    statusEl.innerText = "FETCHING";
+    
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
     try {
-        const response = await fetch("https://api.open-meteo.com/v1/forecast?latitude=53.949&longitude=-1.187&current=temperature_2m,surface_pressure,wind_speed_10m,wind_direction_10m&wind_speed_unit=kn");
-        if(response.ok) statusEl.innerText = "OK";
-        else statusEl.innerText = "ERR";
-    } catch (e) { statusEl.innerText = "OFF"; }
-    calculateFlightSafety();
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${airfield.lat}&longitude=${airfield.lon}&current=temperature_2m,surface_pressure,wind_speed_10m,wind_direction_10m&wind_speed_unit=kn`;
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeout);
+
+        if (!response.ok) throw new Error("API Fail");
+        
+        const data = await response.json();
+        const cur = data.current;
+        
+        // Save to window for calculation
+        window.metData = cur;
+        debugEl.innerText = `T: ${cur.temperature_2m}°C | P: ${cur.surface_pressure}hPa`;
+        statusEl.innerText = "ONLINE";
+        calculateFlightSafety();
+    } catch (e) {
+        statusEl.innerText = "OFFLINE";
+        debugEl.innerText = "Using default values";
+        calculateFlightSafety();
+    }
 }
 
 function calculateFlightSafety() {
     const pilotW = parseInt(document.getElementById('pilotSlider').value);
     const passW = parseInt(document.getElementById('passengerSlider').value);
+    document.getElementById('val-pilot').innerText = pilotW;
+    document.getElementById('val-passenger').innerText = passW;
+
+    // Use fetched data or defaults
+    const temp = window.metData ? window.metData.temperature_2m : 15;
+    const qnh = window.metData ? window.metData.surface_pressure : 1013;
     
-    // Safety check: ensure DOM elements exist before setting innerText
-    const update = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
+    const auw = 275 + pilotW + passW;
+    const densityAlt = Math.round((50 + (1013 - qnh) * 30) + (120 * (temp - 15)));
     
-    update('outAirfield', "Rufforth East");
-    update('outTotalWeight', (275 + pilotW + passW) + " kg");
-    update('outDensityAlt', "1200 ft");
-    update('outRunways', "510m Available");
-    update('outStatus', "PERFORMANCE SAFE");
-    update('headwind-val', "5 KT");
-    update('todr-val', "280 m");
-    update('rwy', "23");
+    document.getElementById('outTotalWeight').innerText = auw + " kg";
+    document.getElementById('outDensityAlt').innerText = densityAlt + " ft";
+    document.getElementById('todr-val').innerText = Math.round(airfield.baseTodr * (auw/450)) + " m";
+    document.getElementById('rwy').innerText = "23";
 }
 
-window.onload = () => { calculateFlightSafety(); fetchLiveWeather(); };
+window.onload = fetchLiveWeather;
 </script>
 </body>
 </html>
