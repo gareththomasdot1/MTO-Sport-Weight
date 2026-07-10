@@ -1,3 +1,10 @@
+<!-- 
+========================================================================
+PROJECT: Gyroplane Performance & Weather Matrix PWA
+VERSION: 0.1
+LAST UPDATED: 2026-07-10
+========================================================================
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -109,7 +116,7 @@
 
 <script>
     // Configuration Constants
-    const HOME_AIRFIELD = "Rufforth East"; //
+    const HOME_AIRFIELD = "Rufforth East"; // Primary flying location home config
 
     // DOM Elements
     const airfieldInput = document.getElementById('airfieldInput');
@@ -134,7 +141,7 @@
 
         matrixOutput.textContent = `Querying data for [${query.toUpperCase()}]...\n\n[Matrix Results Stub]\n- Temperature: ---\n- QNH: ---\n- Wind: ---\n- Density Altitude: ---`;
         
-        // TODO: Integrate actual dynamic fetch/calculation matrix logic here
+        // Dynamic fetch/calculation matrix logic will be integrated directly beneath here
     }
 
     // Event Listeners
@@ -146,6 +153,11 @@
         if (e.key === 'Enter') {
             performSearch();
         }
+    });
+
+    // Run automatically on load to ensure Rufforth East is standard default fallback
+    window.addEventListener('DOMContentLoaded', () => {
+        setHomeAirfield();
     });
 </script>
 
