@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aircraft Performance & Airfield Calculator 3.0 </title>
+    <title>Aircraft Performance & Airfield Calculator 3.1 </title>
     <style>
         :root {
             --airbus-cyan: #00f2ff;
@@ -213,10 +213,18 @@
             <div class="label">LOADING PARAMETERS</div>
             <div class="calc-content">
                 <div class="form-group" style="margin-top: 10px;">
-                    <span class="form-label">Pilot & Passenger Weight <span id="val-crew" class="range-val">90 kg</span></span>
+                    <span class="form-label">Pilot Weight <span id="val-pilot" class="range-val">90 kg</span></span>
                     <div class="slider-container">
-                        <input type="range" id="crewSlider" min="0" max="250" value="90" oninput="syncWeight('crew', this.value)">
-                        <input type="number" id="crewWeight" min="0" max="250" value="90" oninput="syncWeight('crew', this.value)">
+                        <input type="range" id="pilotSlider" min="0" max="150" value="90" oninput="syncWeight('pilot', this.value)">
+                        <input type="number" id="pilotWeight" min="0" max="150" value="90" oninput="syncWeight('pilot', this.value)">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <span class="form-label">Passenger Weight <span id="val-passenger" class="range-val">0 kg</span></span>
+                    <div class="slider-container">
+                        <input type="range" id="passengerSlider" min="0" max="150" value="0" oninput="syncWeight('passenger', this.value)">
+                        <input type="number" id="passengerWeight" min="0" max="150" value="0" oninput="syncWeight('passenger', this.value)">
                     </div>
                 </div>
 
@@ -271,6 +279,10 @@
                         <td id="outRunways" class="val-out">--</td>
                     </tr>
                     <tr>
+                        <td>REQUIRED RUNWAY</td>
+                        <td id="outRunwayReq" class="val-out">--</td>
+                    </tr>
+                    <tr>
                         <td>FLIGHT SAFETY STATUS</td>
                         <td id="outStatus">--</td>
                     </tr>
@@ -322,10 +334,14 @@ function closeNav() { document.getElementById("mySidebar").style.width = "0"; }
 function syncWeight(type, value) {
     let numVal = parseInt(value) || 0;
     
-    if (type === 'crew') {
-        document.getElementById('crewSlider').value = numVal;
-        document.getElementById('crewWeight').value = numVal;
-        document.getElementById('val-crew').innerText = numVal + " kg";
+    if (type === 'pilot') {
+        document.getElementById('pilotSlider').value = numVal;
+        document.getElementById('pilotWeight').value = numVal;
+        document.getElementById('val-pilot').innerText = numVal + " kg";
+    } else if (type === 'passenger') {
+        document.getElementById('passengerSlider').value = numVal;
+        document.getElementById('passengerWeight').value = numVal;
+        document.getElementById('val-passenger').innerText = numVal + " kg";
     } else if (type === 'baggage') {
         document.getElementById('baggageSlider').value = numVal;
         document.getElementById('baggageWeight').value = numVal;
@@ -349,7 +365,7 @@ async function fetchRealWeather(lat, lon) {
             heading: data.current.wind_direction_10m,
             speed: Math.round(data.current.wind_speed_10m),
             temp: data.current.temperature_2m,
-            qnh: Math.round(data.current.surface_pressure), // Approximation of QNH based on surface pressure
+            qnh: Math.round(data.current.surface_pressure), 
             text: `OAT ${data.current.temperature_2m}°C, QNH ${Math.round(data.current.surface_pressure)}`
         };
     } catch (error) {
@@ -408,7 +424,8 @@ function loadSavedConfigOnStartup() {
     } else {
         document.getElementById('outReg').innerText = "G-IROI";
     }
-    syncWeight('crew', document.getElementById('crewWeight').value);
+    syncWeight('pilot', document.getElementById('pilotWeight').value);
+    syncWeight('passenger', document.getElementById('passengerWeight').value);
     syncWeight('baggage', document.getElementById('baggageWeight').value);
     syncWeight('fuel', document.getElementById('fuelLoad').value);
 }
@@ -416,7 +433,10 @@ function loadSavedConfigOnStartup() {
 // Adjusted to handle async data fetching and incorporate environmental factors into performance
 async function calculateFlightSafety() {
     let statusElement = document.getElementById('outStatus');
+    let runwayReqElement = document.getElementById('outRunwayReq');
+    
     statusElement.innerHTML = '<span class="status-text" style="color: #888;">CALCULATING...</span>';
+    runwayReqElement.innerHTML = '<span class="status-text" style="color: #888;">...</span>';
 
     const saved = localStorage.getItem('aircraftConfig');
     let config = saved ? JSON.parse(saved) : {
@@ -429,12 +449,13 @@ async function calculateFlightSafety() {
     const emptyWeight = parseFloat(config.emptyWeight) || 275;
     const maxWeight = parseFloat(config.maxWeight) || 450;
 
-    const crewWeight = parseFloat(document.getElementById('crewWeight').value) || 0;
+    const pilotWeight = parseFloat(document.getElementById('pilotWeight').value) || 0;
+    const passengerWeight = parseFloat(document.getElementById('passengerWeight').value) || 0;
     const baggageWeight = parseFloat(document.getElementById('baggageWeight').value) || 0;
     const fuelLitres = parseFloat(document.getElementById('fuelLoad').value) || 0;
     const fuelWeight = Math.round(fuelLitres * 0.72);
     
-    const totalWeight = emptyWeight + crewWeight + baggageWeight + fuelWeight;
+    const totalWeight = emptyWeight + pilotWeight + passengerWeight + baggageWeight + fuelWeight;
     
     document.getElementById('outTotalWeight').innerText = totalWeight + " kg / " + maxWeight + " kg";
     document.getElementById('outFuelWeight').innerText = fuelWeight + " kg";
@@ -483,7 +504,26 @@ async function calculateFlightSafety() {
             effectiveWeight -= headwindComponent * (maxWeight * 0.005);
         }
 
-        // Determine final safety status based on structural limits AND performance limits
+        // 4. Calculate Approximate Runway Requirement (Meters)
+        // Base ground roll formula scaling from empty to gross weight (approximate light sport figures)
+        let baseRoll = 100 + ((Math.max(emptyWeight, totalWeight) - emptyWeight) / (maxWeight - emptyWeight)) * 150; 
+        
+        // Density altitude penalty (approx +10% distance per 1000ft DA)
+        let daMultiplier = 1 + (Math.max(0, densityAltitude) / 1000) * 0.10;
+        
+        // Wind penalty/bonus
+        let windMultiplier = 1.0;
+        if (headwindComponent > 0) {
+            windMultiplier = Math.max(0.4, 1 - (headwindComponent * 0.015)); // -1.5% per kt headwind
+        } else if (headwindComponent < 0) {
+            windMultiplier = 1 + (Math.abs(headwindComponent) * 0.04); // +4% per kt tailwind
+        }
+        
+        let takeoffDistance = baseRoll * daMultiplier * windMultiplier;
+        let requiredRunway = Math.round(takeoffDistance * 1.3); // Standard 1.3x safety factor for general aviation
+        runwayReqElement.innerText = requiredRunway + " Meters";
+
+        // 5. Determine final safety status based on structural limits AND performance limits
         if (totalWeight > maxWeight) {
             statusElement.innerHTML = '<span class="status-text status-not-ok">NOT OK (OVERWEIGHT)</span>';
         } else if (effectiveWeight > maxWeight) {
@@ -498,6 +538,7 @@ async function calculateFlightSafety() {
     } else {
         document.getElementById('outAirfield').innerText = airfieldKey;
         document.getElementById('outRunways').innerText = "--";
+        runwayReqElement.innerText = "N/A";
         
         // Fallback checks if airfield isn't found
         if (totalWeight > maxWeight) {
