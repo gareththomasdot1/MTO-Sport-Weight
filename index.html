@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MTO-Sport Performance Glass Cockpit</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Titillium+Web:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Titillium Web', sans-serif;
+            background-color: #05070a;
+            color: #e2e8f0;
+        }
+        .font-digital {
+            font-family: 'Share Tech Mono', monospace;
+        }
+        .cockpit-panel {
+            background: linear-gradient(145deg, #0d1117, #070a0e);
+            border: 1px solid #1e293b;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 10px 15px -3px rgba(0,0,0,0.5);
+        }
+        /* Custom neon glass indicators */
+        .status-safe { color: #00ff66; text-shadow: 0 0 10px rgba(0,255,102,0.5); }
+        .status-warning { color: #ffaa00; text-shadow: 0 0 10px rgba(255,170,0,0.5); }
+        .status-danger { color: #ff3333; text-shadow: 0 0 10px rgba(255,51,51,0.5); }
+        
+        .border-safe { border-color: #00ff66; }
+        .border-warning { border-color: #ffaa00; }
+        .border-danger { border-color: #ff3333; }
+
+        /* Custom styling for sliders to look like cockpit levers */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: #1e293b;
+            height: 8px;
+            border-radius: 4px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 24px;
+            background: #ffaa00;
+            border-radius: 2px;
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(255,170,0,0.8);
+        }
+    </style>
+</head>
+<body class="p-2 sm:p-4 min-h-screen flex flex-col justify-between">
+
+    <header class="cockpit-panel p-4 rounded-lg mb-4 flex flex-wrap justify-between items-center gap-4 border-t-2 border-amber-500">
+        <div>
+            <h1 class="text-xl font-bold tracking-wider text-amber-500 uppercase flex items-center gap-2">
+                <span class="inline-block w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
+                MTO-Sport Performance HUD
+            </h1>
+            <p class="text-xs text-slate-400 font-digital">AIRCRAFT PROFILE: <span id="hud-profile-reg" class="text-white">NONE</span></p>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="switchTab('calculator')" id="btn-tab-calc" class="px-4 py-2 bg-amber-600 text-black font-bold uppercase text-xs rounded tracking-widest cursor-pointer hover:bg-amber-500 transition-colors">HUD Flight</button>
+            <button onclick="switchTab('config')" id="btn-tab-conf" class="px-4 py-2 bg-slate-800 text-slate-300 font-bold uppercase text-xs rounded tracking-widest cursor-pointer hover:bg-slate-700 transition-colors">Config Profiles</button>
+        </div>
+    </header>
+
+    <main class="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+        
+        <div id="tab-calculator" class="lg:col-span-3 grid grid-cols-1 lg:grid-cols-3 gap-4">
+            
+            <div class="cockpit-panel p-4 rounded-lg flex flex-col gap-4">
+                <h2 class="text-sm font-bold text-slate-400 tracking-widest uppercase border-b border-slate-800 pb-2">Flight Parameters</h2>
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Active Registration</label>
+                    <select id="calc-profile-select" onchange="loadSelectedProfileToCalc()" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-amber-400 focus:outline-none focus:border-amber-500 font-digital"></select>
+                </div>
+
+                <hr class="border-slate-800 my-1">
+
+                <div>
+                    <div class="flex justify-between text-xs font-digital mb-1">
+                        <span class="text-slate-400">PILOT WEIGHT (FRONT)</span>
+                        <span class="text-amber-400 font-bold"><span id="val-pilot">80</span> kg</span>
+                    </div>
+                    <input type="range" id="input-pilot" min="60" max="125" value="80" class="w-full" oninput="calculatePerformance()">
+                    <div class="flex justify-between text-[10px] text-slate-500 font-digital"><span>Min: 60kg</span><span>Max: 125kg</span></div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-xs font-digital mb-1">
+                        <span class="text-slate-400">PASSENGER WEIGHT (REAR)</span>
+                        <span class="text-amber-400 font-bold"><span id="val-passenger">0</span> kg</span>
+                    </div>
+                    <input type="range" id="input-passenger" min="0" max="120" value="0" class="w-full" oninput="calculatePerformance()">
+                    <div class="flex justify-between text-[10px] text-slate-500 font-digital"><span>Min: 0kg</span><span>Max: 120kg</span></div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-xs font-digital mb-1">
+                        <span class="text-slate-400">FUEL LOAD</span>
+                        <span class="text-amber-400 font-bold"><span id="val-fuel">30</span> Litres</span>
+                    </div>
+                    <input type="range" id="input-fuel" min="5" max="70" value="30" class="w-full" oninput="calculatePerformance()">
+                    <div class="flex justify-between text-[10px] text-slate-500 font-digital"><span>Min: 5L</span><span>Max: 70L</span></div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-xs font-digital mb-1">
+                        <span class="text-slate-400">RUNWAY AVAILABLE</span>
+                        <span class="text-amber-400 font-bold"><span id="val-runway">400</span> m</span>
+                    </div>
+                    <input type="range" id="input-runway" min="150" max="1200" value="400" class="w-full" oninput="calculatePerformance()">
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-xs font-digital mb-1">
+                        <span class="text-slate-400">AIR TEMPERATURE</span>
+                        <span class="text-amber-400 font-bold"><span id="val-temp">15</span> °C</span>
+                    </div>
+                    <input type="range" id="input-temp" min="-10" max="45" value="15" class="w-full" oninput="calculatePerformance()">
+                </div>
+
+                <div class="bg-slate-900/60 p-3 rounded border border-slate-800 mt-2">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Live Weather Sync</label>
+                    <div class="flex gap-2 mb-2">
+                        <input type="text" id="weather-city" placeholder="e.g. York, UK" class="flex-grow bg-black border border-slate-700 rounded p-1.5 text-xs focus:outline-none text-white font-digital">
+                        <button onclick="fetchWeather()" class="bg-amber-600 hover:bg-amber-500 text-black font-bold text-xs px-3 rounded uppercase cursor-pointer transition-colors">Sync</button>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="text" id="weather-api-key" placeholder="OpenWeather API Key" class="w-full bg-black border border-slate-700 rounded p-1.5 text-[11px] focus:outline-none text-slate-300 font-digital">
+                    </div>
+                    <div id="weather-status" class="text-[11px] text-slate-500 mt-2 font-digital">No live weather synced. Using manual indicators.</div>
+                </div>
+            </div>
+
+            <div class="cockpit-panel p-4 rounded-lg flex flex-col justify-between border-x border-slate-800">
+                <h2 class="text-sm font-bold text-slate-400 tracking-widest uppercase border-b border-slate-800 pb-2">EFIS Matrix</h2>
+                
+                <div id="dispatch-status-box" class="my-4 p-4 rounded border-2 bg-black/40 text-center flex flex-col justify-center items-center">
+                    <span class="text-xs font-bold tracking-widest text-slate-400 uppercase">DISPATCH STATUS</span>
+                    <span id="dispatch-status-text" class="text-3xl font-black tracking-wider font-digital mt-1">GO</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 font-digital my-2">
+                    <div class="bg-black/50 p-3 rounded border border-slate-800">
+                        <div class="text-[11px] text-slate-500 uppercase">Total Takeoff Mass</div>
+                        <div class="text-2xl font-bold text-white"><span id="hud-tom">--</span> <span class="text-xs text-slate-400">kg</span></div>
+                        <div class="text-[10px] text-slate-400 mt-1">Max: 500 kg</div>
+                    </div>
+                    <div class="bg-black/50 p-3 rounded border border-slate-800">
+                        <div class="text-[11px] text-slate-500 uppercase">Density Altitude</div>
+                        <div class="text-2xl font-bold text-sky-400"><span id="hud-density-alt">--</span> <span class="text-xs text-slate-400">ft</span></div>
+                        <div class="text-[10px] text-slate-400 mt-1">ISA Ref: 15°C SL</div>
+                    </div>
+                    <div class="bg-black/50 p-3 rounded border border-slate-800">
+                        <div class="text-[11px] text-slate-500 uppercase">Takeoff Run (TORR)</div>
+                        <div class="text-2xl font-bold text-amber-400"><span id="hud-torr">--</span> <span class="text-xs text-slate-400">m</span></div>
+                        <div class="text-[10px] text-slate-400 mt-1">Roll ground distance</div>
+                    </div>
+                    <div class="bg-black/50 p-3 rounded border border-slate-800">
+                        <div class="text-[11px] text-slate-500 uppercase">Clearance (50ft Obs)</div>
+                        <div class="text-2xl font-bold text-amber-400"><span id="hud-todr">--</span> <span class="text-xs text-slate-400">m</span></div>
+                        <div class="text-[10px] text-slate-400 mt-1">Inc. 1.33 Safety Factor</div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900/40 p-3 rounded border border-slate-800 text-xs font-digital flex flex-col gap-1 mt-auto">
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">WIND VECTOR:</span>
+                        <span id="hud-wind" class="text-white font-bold">000° @ 0 kts</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">HEADWIND COMPONENT:</span>
+                        <span id="hud-headwind" class="text-emerald-400 font-bold">0 kts</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">AIR PRESSURE (QNH):</span>
+                        <span id="hud-qnh" class="text-white">1013 hPa</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cockpit-panel p-4 rounded-lg flex flex-col gap-4">
+                <h2 class="text-sm font-bold text-slate-400 tracking-widest uppercase border-b border-slate-800 pb-2">Runway Mapping Visual</h2>
+                
+                <div class="relative w-full bg-black rounded border border-slate-800 flex items-center justify-center p-2">
+                    <canvas id="runwayCanvas" width="400" height="180" class="w-full h-auto"></canvas>
+                </div>
+
+                <div class="flex-grow">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Systems Messages & Advisory</h3>
+                    <div id="advisory-messages" class="text-xs font-digital flex flex-col gap-2 max-h-[160px] overflow-y-auto pr-1">
+                        </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div id="tab-config" class="lg:col-span-3 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                
+                <div class="cockpit-panel p-4 rounded-lg flex flex-col gap-4">
+                    <h2 class="text-sm font-bold text-amber-500 tracking-widest uppercase border-b border-slate-800 pb-2">Create/Edit Aircraft Profile</h2>
+                    
+                    <form id="profile-form" onsubmit="saveProfile(event)" class="flex flex-col gap-3 text-xs">
+                        <div>
+                            <label class="block text-slate-400 uppercase font-semibold mb-1">Tail Registration / ID</label>
+                            <input type="text" id="conf-reg" required placeholder="e.g. G-CFVG" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white font-digital uppercase focus:outline-none focus:border-amber-500">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-slate-400 uppercase font-semibold mb-1">Empty Weight (kg)</label>
+                                <input type="number" id="conf-empty-wt" required value="245" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white font-digital focus:outline-none focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 uppercase font-semibold mb-1">Max Weight (kg)</label>
+                                <input type="number" id="conf-max-wt" required value="500" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white font-digital focus:outline-none focus:border-amber-500">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-slate-400 uppercase font-semibold mb-1">Base TOR (m)</label>
+                                <input type="number" id="conf-base-tor" required value="170" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white font-digital focus:outline-none focus:border-amber-500">
+                                <span class="text-[10px] text-slate-500">ISA SL ground roll</span>
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 uppercase font-semibold mb-1">Runway Heading</label>
+                                <input type="number" id="conf-rwy-hdg" required value="220" min="0" max="360" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white font-digital focus:outline-none focus:border-amber-500">
+                                <span class="text-[10px] text-slate-500">Degrees magnetic</span>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="mt-2 w-full bg-emerald-600 hover:bg-emerald-500 text-black font-bold uppercase tracking-widest py-2 rounded cursor-pointer transition-colors text-sm">Commit Profile</button>
+                    </form>
+                </div>
+
+                <div class="cockpit-panel p-4 rounded-lg lg:col-span-2 flex flex-col gap-4">
+                    <h2 class="text-sm font-bold text-slate-400 tracking-widest uppercase border-b border-slate-800 pb-2">Stored Fleet Register</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs font-digital">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-slate-500 uppercase">
+                                    <th class="p-2">Registration</th>
+                                    <th class="p-2">Empty Wt</th>
+                                    <th class="p-2">Max Wt</th>
+                                    <th class="p-2">Base TOR</th>
+                                    <th class="p-2">Rwy Hdg</th>
+                                    <th class="p-2 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="profile-table-body">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="cockpit-panel p-3 rounded-lg flex flex-wrap justify-between text-[11px] font-digital text-slate-500">
+        <div>SYSTEM STATUS: ONLINE</div>
+        <div>MTO-SPORT ROTAX 912 ULS / 914 UL PERFORMANCE ENGINE REGRESSION ENGINE v2.4</div>
+        <div>LOCAL DATA PERSISTENCE: LOCALSTORAGE</div>
+    </footer>
+
+    <script>
+        // Initial Mock Defaults matching Autogyro MTO-Sport specifications
+        const defaultProfiles = [
+            { reg: "G-CFVG", emptyWeight: 245, maxWeight: 500, baseTor: 170, rwyHeading: 220 },
+            { reg: "G-LZED", emptyWeight: 250, maxWeight: 500, baseTor: 170, rwyHeading: 040 }
+        ];
+
+        let state = {
+            profiles: [],
+            currentProfileReg: "",
+            weather: {
+                temp: 15,
+                windDir: 220,
+                windSpeed: 0,
+                qnh: 1013
+            }
+        };
+
+        // App Initializer
+        window.addEventListener('DOMContentLoaded', () => {
+            initStorage();
+            renderProfiles();
+            populateCalcSelect();
+            
+            if(state.profiles.length > 0) {
+                state.currentProfileReg = state.profiles[0].reg;
+                document.getElementById('calc-profile-select').value = state.currentProfileReg;
+            }
+            
+            syncSlidersWithState();
+            calculatePerformance();
+        });
+
+        function initStorage() {
+            const stored = localStorage.getItem('mto_gyro_profiles');
+            if (stored) {
+                state.profiles = JSON.parse(stored);
+            } else {
+                state.profiles = [...defaultProfiles];
+                localStorage.setItem('mto_gyro_profiles', JSON.stringify(state.profiles));
+            }
+        }
+
+        function switchTab(tab) {
+            if (tab === 'calculator') {
+                document.getElementById('tab-calculator').classList.remove('hidden');
+                document.getElementById('tab-config').classList.add('hidden');
+                document.getElementById('btn-tab-calc').className = "px-4 py-2 bg-amber-600 text-black font-bold uppercase text-xs rounded tracking-widest cursor-pointer";
+                document.getElementById('btn-tab-conf').className = "px-4 py-2 bg-slate-800 text-slate-300 font-bold uppercase text-xs rounded tracking-widest cursor-pointer";
+            } else {
+                document.getElementById('tab-calculator').classList.add('hidden');
+                document.getElementById('tab-config').classList.remove('hidden');
+                document.getElementById('btn-tab-calc').className = "px-4 py-2 bg-slate-800 text-slate-300 font-bold uppercase text-xs rounded tracking-widest cursor-pointer";
+                document.getElementById('btn-tab-conf').className = "px-4 py-2 bg-amber-600 text-black font-bold uppercase text-xs rounded tracking-widest cursor-pointer";
+            }
+        }
+
+        function syncSlidersWithState() {
+            document.getElementById('input-temp').value = state.weather.temp;
+            document.getElementById('val-temp').innerText = state.weather.temp;
+        }
+
+        function populateCalcSelect() {
+            const select = document.getElementById('calc-profile-select');
+            select.innerHTML = '';
+            state.profiles.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.reg;
+                opt.innerText = p.reg;
+                select.appendChild(opt);
+            });
+        }
+
+        function loadSelectedProfileToCalc() {
+            state.currentProfileReg = document.getElementById('calc-profile-select').value;
+            calculatePerformance();
+        }
+
+        // Performance Logic Core Engine
+        function calculatePerformance() {
+            const currentProfile = state.profiles.find(p => p.reg === state.currentProfileReg);
+            if (!currentProfile) {
+                document.getElementById('hud-profile-reg').innerText = "NONE SELECTED";
+                return;
+            }
+
+            document.getElementById('hud-profile-reg').innerText = currentProfile.reg;
+
+            // Gather inputs from DOM UI
+            const pilotWt = parseFloat(document.getElementById('input-pilot').value);
+            const passWt = parseFloat(document.getElementById('input-passenger').value);
+            const fuelLitres = parseFloat(document.getElementById('input-fuel').value);
+            const rwyAvailable = parseFloat(document.getElementById('input-runway').value);
+            
+            // Sync slider labels UI
+            document.getElementById('val-pilot').innerText = pilotWt;
+            document.getElementById('val-passenger').innerText = passWt;
+            document.getElementById('val-fuel').innerText = fuelLitres;
+            document.getElementById('val-runway').innerText = rwyAvailable;
+
+            // Reading slider temperature unless overwritten by current OpenWeather status
+            const airTemp = parseFloat(document.getElementById('input-temp').value);
+            document.getElementById('val-temp').innerText = airTemp;
+            
+            // Fuel Weight Calculation (Aviation AVGAS/MOGAS ~0.72 kg/L)
+            const fuelWt = fuelLitres * 0.72;
+            const totalTakeoffMass = currentProfile.emptyWeight + pilotWt + passWt + fuelWt;
+
+            // Density Altitude Calculation Approximation Rules
+            // ISA Temperature at SL is 15C. Standard lapse rate per 1000ft. 
+            // Variation formula: DA = Pressure Alt + (120 * (OAT - ISA_Temp))
+            const isaTemp = 15; 
+            const densityAltitude = Math.max(0, Math.round(120 * (airTemp - isaTemp)));
+
+            // Wind Vector components
+            const windHdg = state.weather.windDir;
+            const windSpd = state.weather.windSpeed;
+            const rwyHdg = currentProfile.rwyHeading;
+            
+            // Calculate angle difference for headwind component
+            const angleRad = ((windHdg - rwyHdg) * Math.PI) / 180;
+            const headwindComponent = Math.round(windSpd * Math.cos(angleRad));
+
+            // Flight Manual Regressions for Takeoff Run Required (TORR)
+            // Baseline is evaluated at MTOW (500kg)
+            let baseTor = currentProfile.baseTor;
+            
+            // Weight scaling adjustment factor
+            const weightRatio = totalTakeoffMass / currentProfile.maxWeight;
+            let calculatedTorr = baseTor * Math.pow(weightRatio, 2);
+
+            // Density Altitude correction (approx +10% per 1000ft DA above sea level)
+            if (densityAltitude > 0) {
+                calculatedTorr *= (1 + (densityAltitude / 1000) * 0.10);
+            }
+
+            // Wind Correction Factor Rules from POH / CAA guidance:
+            // Headwind reduces roll (~1% reduction per knot of headwind component)
+            // Tailwind adds severe degradation (~20% increase for 5 knot / 10% liftoff speed component)
+            if (headwindComponent > 0) {
+                calculatedTorr *= (1 - (headwindComponent * 0.01));
+            } else if (headwindComponent < 0) {
+                // Negative headwind component indicates a tailwind
+                calculatedTorr *= (1 + (Math.abs(headwindComponent) * 0.04));
+            }
+
+            // Apply Mandatory CAA Public Transport Safety factor (x1.33 Clearance factor over 50ft obstacle)
+            const calculatedTodr = calculatedTorr * 1.33;
+
+            // Map variables out to HUD Interface display matrix
+            document.getElementById('hud-tom').innerText = totalTakeoffMass.toFixed(1);
+            document.getElementById('hud-density-alt').innerText = densityAltitude;
+            document.getElementById('hud-torr').innerText = Math.round(calculatedTorr);
+            document.getElementById('hud-todr').innerText = Math.round(calculatedTodr);
+            document.getElementById('hud-wind').innerText = `${String(windHdg).padStart(3, '0')}° @ ${windSpd} kts`;
+            document.getElementById('hud-headwind').innerText = headwindComponent >= 0 ? `${headwindComponent} kts HW` : `${Math.abs(headwindComponent)} kts TW`;
+            document.getElementById('hud-qnh').innerText = `${state.weather.qnh} hPa`;
+
+            // Validate Safety Margins & Build Dispatch Advisories
+            let systemGo = true;
+            let criticalError = false;
+            const advisories = [];
+
+            if (totalTakeoffMass > currentProfile.maxWeight) {
+                systemGo = false;
+                criticalError = true;
+                advisories.push(`<span class="status-danger">[WARN] MTOW EXCEEDED: ${totalTakeoffMass.toFixed(1)}kg exceeds ${currentProfile.maxWeight}kg structural max.</span>`);
+            }
+            if (pilotWt < 60) {
+                advisories.push(`<span class="status-warning">[ADVISORY] FRONT BALLAST REQUIRED: Pilot weight below 60kg minimum.</span>`);
+            }
+            if (calculatedTodr > rwyAvailable) {
+                systemGo = false;
+                criticalError = true;
+                advisories.push(`<span class="status-danger">[CRITICAL] RUNWAY INSUFFICIENT: TODR (${Math.round(calculatedTodr)}m) exceeds available space (${rwyAvailable}m).</span>`);
+            } else if (calculatedTodr * 1.3 > rwyAvailable) {
+                systemGo = false; // Flag amber caution threshold
+                advisories.push(`<span class="status-warning">[CAUTION] TIGHT MARGIN: Clearance safety window below 30% buffer.</span>`);
+            }
+            if (headwindComponent < -5) {
+                advisories.push(`<span class="status-warning">[WARN] TAILWIND HAZARD: Operating with significant tailwind vector.</span>`);
+            }
+            if (airTemp > 35) {
+                advisories.push(`<span class="status-warning">[PERF] HIGH OAT: Engine thrust output degradation imminent.</span>`);
+            }
+
+            if (advisories.length === 0) {
+                advisories.push(`<span class="status-safe">[OK] Nominal flight matrix profile check passed. All metrics green.</span>`);
+            }
+
+            // Render Advisories Output
+            document.getElementById('advisory-messages').innerHTML = advisories.join('');
+
+            // Set dispatch box visual state colors
+            const dispatchBox = document.getElementById('dispatch-status-box');
+            const dispatchTxt = document.getElementById('dispatch-status-text');
+            
+            dispatchBox.className = "my-4 p-4 rounded border-2 bg-black/40 text-center flex flex-col justify-center items-center ";
+            if (criticalError) {
+                dispatchBox.classList.add('border-danger', 'status-danger');
+                dispatchTxt.innerText = "NO GO";
+            } else if (!systemGo) {
+                dispatchBox.classList.add('border-warning', 'status-warning');
+                dispatchTxt.innerText = "CAUTION";
+            } else {
+                dispatchBox.classList.add('border-safe', 'status-safe');
+                dispatchTxt.innerText = "GO TO FLY";
+            }
+
+            // Draw current canvas tactical graphic rendering
+            drawRunwayGraphic(rwyAvailable, calculatedTorr, calculatedTodr);
+        }
+
+        // Draw 2D Vector Tactical Map Runway
+        function drawRunwayGraphic(rwyTotal, torr, todr) {
+            const canvas = document.getElementById('runwayCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Frame dimensions background
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // Runway layout bounds mapping
+            const rwyX = 40;
+            const rwyY = 80;
+            const rwyW = w - 80;
+            const rwyH = 25;
+
+            // Render Runway Asphalt Structure
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(rwyX, rwyY, rwyW, rwyH);
+            
+            // Center Line Markings
+            ctx.strokeStyle = '#ffffff';
+            ctx.setLineDash([6, 6]);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(rwyX, rwyY + rwyH/2);
+            ctx.lineTo(rwyX + rwyW, rwyY + rwyH/2);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset dash line configuration
+
+            // Boundary thresholds text markings
+            ctx.fillStyle = '#64748b';
+            ctx.font = '10px Share Tech Mono';
+            ctx.fillText("0m", rwyX, rwyY + 45);
+            ctx.fillText(`${rwyTotal}m`, rwyX + rwyW - 25, rwyY + 45);
+
+            // Compute structural scaling multipliers safely
+            const scale = rwyW / rwyTotal;
+            const torrPixels = Math.min(torr * scale, rwyW);
+            const todrPixels = Math.min(todr * scale, rwyW);
+
+            // Draw Ground Roll Profile (TORR Vector Line)
+            ctx.strokeStyle = '#ffaa00';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(rwyX, rwyY + rwyH/2);
+            ctx.lineTo(rwyX + torrPixels, rwyY + rwyH/2);
+            ctx.stroke();
+
+            // Ground Roll End Pointer Dot
+            ctx.fillStyle = '#ffaa00';
+            ctx.beginPath();
+            ctx.arc(rwyX + torrPixels, rwyY + rwyH/2, 4, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Draw Climb Clearance safety vector curve trajectory (TODR Line)
+            ctx.strokeStyle = '#00ff66';
+            if (todr > rwyTotal) ctx.strokeStyle = '#ff3333'; // Highlight flight violation lines red
+            ctx.lineWidth = 2;
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(rwyX + torrPixels, rwyY + rwyH/2);
+            // Parabolic curve simulating rotation climb out altitude profile mapping
+            ctx.quadraticCurveTo(rwyX + torrPixels + (todrPixels - torrPixels)/2, rwyY - 30, rwyX + todrPixels, rwyY - 40);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw 50ft Clearance Marker Goal flag
+            ctx.fillStyle = (todr > rwyTotal) ? '#ff3333' : '#00ff66';
+            ctx.fillRect(rwyX + todrPixels - 1, rwyY - 50, 2, 50);
+            ctx.font = '9px Share Tech Mono';
+            ctx.fillText("50ft Clear", rwyX + todrPixels - 25, rwyY - 55);
+        }
+
+        // Configuration CRUD Operations Logic
+        function renderProfiles() {
+            const tbody = document.getElementById('profile-table-body');
+            tbody.innerHTML = '';
+
+            state.profiles.forEach((p) => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-900 hover:bg-slate-900/40";
+                tr.innerHTML = `
+                    <td class="p-2 font-bold text-white">${p.reg}</td>
+                    <td class="p-2">${p.emptyWeight} kg</td>
+                    <td class="p-2">${p.maxWeight} kg</td>
+                    <td class="p-2">${p.baseTor} m</td>
+                    <td class="p-2">${p.rwyHeading}°</td>
+                    <td class="p-2 text-right">
+                        <button onclick="deleteProfile('${p.reg}')" class="text-red-500 hover:text-red-400 font-semibold cursor-pointer">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function saveProfile(e) {
+            e.preventDefault();
+            const reg = document.getElementById('conf-reg').value.toUpperCase().trim();
+            const emptyWeight = parseFloat(document.getElementById('conf-empty-wt').value);
+            const maxWeight = parseFloat(document.getElementById('conf-max-wt').value);
+            const baseTor = parseFloat(document.getElementById('conf-base-tor').value);
+            const rwyHeading = parseFloat(document.getElementById('conf-rwy-hdg').value);
+
+            const index = state.profiles.findIndex(p => p.reg === reg);
+            const newProfile = { reg, emptyWeight, maxWeight, baseTor, rwyHeading };
+
+            if (index > -1) {
+                state.profiles[index] = newProfile;
+            } else {
+                state.profiles.push(newProfile);
+            }
+
+            localStorage.setItem('mto_gyro_profiles', JSON.stringify(state.profiles));
+            renderProfiles();
+            populateCalcSelect();
+            
+            state.currentProfileReg = reg;
+            document.getElementById('calc-profile-select').value = reg;
+            
+            document.getElementById('profile-form').reset();
+            calculatePerformance();
+            switchTab('calculator');
+        }
+
+        function deleteProfile(reg) {
+            if(state.profiles.length <= 1) {
+                alert("At least one registration profile configuration must remain configured in system core matrix.");
+                return;
+            }
+            state.profiles = state.profiles.filter(p => p.reg !== reg);
+            localStorage.setItem('mto_gyro_profiles', JSON.stringify(state.profiles));
+            renderProfiles();
+            populateCalcSelect();
+            
+            if(state.currentProfileReg === reg) {
+                state.currentProfileReg = state.profiles[0].reg;
+                document.getElementById('calc-profile-select').value = state.currentProfileReg;
+            }
+            calculatePerformance();
+        }
+
+        // Live OpenWeather API Integration Controller Async Function
+        async function fetchWeather() {
+            const city = document.getElementById('weather-city').value.trim();
+            const apiKey = document.getElementById('weather-api-key').value.trim();
+            const statusDiv = document.getElementById('weather-status');
+
+            if (!city || !apiKey) {
+                statusDiv.className = "text-[11px] text-red-400 mt-2 font-digital";
+                statusDiv.innerText = "Error: Input location city name and a valid API key credential.";
+                return;
+            }
+
+            statusDiv.className = "text-[11px] text-amber-400 mt-2 font-digital animate-pulse";
+            statusDiv.innerText = "Interrogating OpenWeather API Metars...";
+
+            try {
+                // Using standard current weather mapping endpoint queries
+                const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric`);
+                
+                if(!response.ok) throw new Error("Location reference not found or authorized credentials denied.");
+                
+                const data = await response.json();
+
+                // Process meteorological components into local architecture variables
+                state.weather.temp = Math.round(data.main.temp);
+                state.weather.windDir = data.wind.deg || 0;
+                // Convert wind speed from meters/sec to aviation knots (1 m/s = 1.94384 knots)
+                state.weather.windSpeed = Math.round(data.wind.speed * 1.94384);
+                state.weather.qnh = data.main.pressure;
+
+                // Override manual entry sliders seamlessly
+                document.getElementById('input-temp').value = state.weather.temp;
+                document.getElementById('val-temp').innerText = state.weather.temp;
+
+                statusDiv.className = "text-[11px] text-emerald-400 mt-2 font-digital";
+                statusDiv.innerText = `Sync successful for ${data.name}. Matrix updated.`;
+                
+                calculatePerformance();
+
+            } catch (err) {
+                statusDiv.className = "text-[11px] text-red-400 mt-2 font-digital";
+                statusDiv.innerText = `API Exception: ${err.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
