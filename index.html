@@ -2,691 +2,152 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MTO-Sport Takeoff Calculator</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aviation Performance & Weather Matrix</title>
     <style>
         body {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            background-color: #0b0f19;
-            color: #f1f5f9;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            padding: 20px;
+            margin: 0;
         }
-        .panel {
-            border: 1px solid #1e293b;
-            background-color: #111827;
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #1e1e1e;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
-        
-        /* RAG Status & Pulse Animation styles */
-        .rag-green { 
-            color: #10b981; 
-            border-color: #10b981; 
-            background-color: rgba(16, 185, 129, 0.08); 
-            box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+        h1 {
+            font-size: 1.5rem;
+            margin-top: 0;
+            color: #fff;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
         }
-        .rag-amber { 
-            color: #f59e0b; 
-            border-color: #f59e0b; 
-            background-color: rgba(245, 158, 11, 0.08); 
-            box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
-            animation: radar-pulse-amber 2s infinite alternate;
+        .form-group {
+            margin-bottom: 15px;
         }
-        .rag-red { 
-            color: #ef4444; 
-            border-color: #ef4444; 
-            background-color: rgba(239, 68, 68, 0.08); 
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
-            animation: radar-pulse-red 1.5s infinite alternate;
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #aaa;
         }
-
-        @keyframes radar-pulse-amber {
-            0% { box-shadow: 0 0 8px rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.6); }
-            100% { box-shadow: 0 0 22px rgba(245, 158, 11, 0.55); border-color: rgba(245, 158, 11, 1); }
+        .input-row {
+            display: flex;
+            gap: 10px;
         }
-        @keyframes radar-pulse-red {
-            0% { box-shadow: 0 0 8px rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.5); }
-            100% { box-shadow: 0 0 28px rgba(239, 68, 68, 0.7); border-color: rgba(239, 68, 68, 1); }
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 1rem;
+            text-transform: uppercase;
         }
-        
-        input[type="range"] {
-            -webkit-appearance: none;
-            appearance: none;
-            background: #334155;
-            height: 6px;
-            border-radius: 3px;
+        input[type="text"]:focus {
+            border-color: #007acc;
+            outline: none;
         }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 16px;
-            height: 20px;
-            background: #f59e0b;
-            border-radius: 2px;
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
             cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .btn-primary {
+            background-color: #007acc;
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background-color: #0062a3;
+        }
+        .btn-secondary {
+            background-color: #3a3a3a;
+            color: #e0e0e0;
+        }
+        .btn-secondary:hover {
+            background-color: #4a4a4a;
+        }
+        .output-box {
+            margin-top: 20px;
+            background: #151515;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 15px;
+            min-height: 100px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            color: #a6e22e;
         }
     </style>
 </head>
-<body class="p-3 min-h-screen flex flex-col justify-between max-w-lg mx-auto">
+<body>
 
-    <!-- HEADER -->
-    <header class="panel p-3 rounded mb-3 flex justify-between items-center border-t-2 border-amber-500">
-        <div>
-            <h1 class="text-base font-bold tracking-wider text-amber-500 uppercase">MTO WEIGHT & TAKEOFF CALC</h1>
-            <p class="text-[11px] text-slate-400">AIRCRAFT: <span id="hud-reg" class="text-white font-bold">--</span></p>
+<div class="container">
+    <h1>Airfield Performance Lookup</h1>
+    
+    <div class="form-group">
+        <label for="airfieldInput">Airfield ICAO / Name</label>
+        <div class="input-row">
+            <input type="text" id="airfieldInput" placeholder="e.g. EGXU" autocomplete="off">
+            <button type="button" class="btn-secondary" id="homeBtn">Home Airfield</button>
+            <button type="button" class="btn-primary" id="searchBtn">Search</button>
         </div>
-        <div class="flex gap-1">
-            <button onclick="switchTab('calc')" id="tab-calc-btn" class="px-2.5 py-1.5 bg-amber-500 text-black font-bold text-[11px] uppercase rounded cursor-pointer">Calculator</button>
-            <button onclick="switchTab('config')" id="tab-config-btn" class="px-2.5 py-1.5 bg-slate-800 text-slate-300 font-bold text-[11px] uppercase rounded cursor-pointer">Settings</button>
-        </div>
-    </header>
-
-    <!-- MAIN INTERFACE -->
-    <main class="flex-grow">
-        
-        <!-- CALCULATOR TAB -->
-        <div id="tab-calc" class="flex flex-col gap-3">
-            
-            <!-- RAG STATUS CARD -->
-            <div id="rag-status-card" class="p-4 rounded border-2 text-center flex flex-col justify-center items-center my-1 transition-all duration-300">
-                <span class="text-[10px] tracking-widest uppercase font-bold text-slate-400">TAKEOFF STATUS</span>
-                <span id="rag-status-text" class="text-2xl font-black tracking-widest mt-1">NO DATA</span>
-            </div>
-
-            <!-- AIRFIELD WEATHER SYNC -->
-            <div class="panel p-3 rounded">
-                <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Airfield Search & Sync</label>
-                <div class="flex gap-1.5">
-                    <input type="text" id="calc-icao" placeholder="Rufforth East, Sherburn, EGCM..." class="flex-grow bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-white uppercase text-center font-bold">
-                    
-                    <!-- SEARCH BUTTON ICON -->
-                    <button id="btn-fetch-weather" onclick="syncAirfieldAndWeather()" title="Search Airfield" class="w-10 bg-amber-500 hover:bg-amber-400 text-black font-bold flex items-center justify-center rounded transition-colors cursor-pointer">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.602 10.602Z" />
-                        </svg>
-                    </button>
-
-                    <!-- HOME BUTTON ICON -->
-                    <button id="btn-home-weather" onclick="loadHomeAirfield()" title="Load Home Airfield" class="w-10 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-500 font-bold flex items-center justify-center rounded transition-colors cursor-pointer">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-                        </svg>
-                    </button>
-                </div>
-                <div id="sync-feedback" class="text-[10px] text-slate-500 mt-1">Search nearby fields or tap home to recall parameters.</div>
-                
-                <!-- METEOROLOGICAL LIVE AGE TIMESTAMP STRIP -->
-                <div id="weather-age-container" class="hidden flex justify-between items-center mt-2 pt-2 border-t border-slate-800 text-[10px]">
-                    <span class="text-slate-400">DATA FETCHED: <span id="weather-timestamp" class="text-slate-300 font-bold">--:--:--</span></span>
-                    <span class="text-amber-500 font-bold bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-900/40"><span id="weather-age-counter">0</span>s ago</span>
-                </div>
-            </div>
-
-            <!-- SLIDER CONTROLS -->
-            <div class="panel p-3 rounded flex flex-col gap-3">
-                <div>
-                    <label class="flex justify-between text-xs mb-1">
-                        <span class="text-slate-400 uppercase">Select Aircraft</span>
-                        <select id="calc-profile-select" onchange="loadActiveProfile()" class="bg-transparent border-b border-slate-700 text-amber-500 font-bold focus:outline-none text-xs"></select>
-                    </label>
-                </div>
-
-                <hr class="border-slate-800">
-
-                <div id="wrapper-pilot" class="p-1 rounded border border-transparent transition-all">
-                    <div class="flex justify-between text-xs mb-1">
-                        <span class="text-slate-400">PILOT WEIGHT</span>
-                        <span class="text-amber-500 font-bold"><span id="lbl-pilot">80</span> kg</span>
-                    </div>
-                    <input type="range" id="slide-pilot" min="60" max="125" value="80" class="w-full" oninput="runCalculations()">
-                </div>
-
-                <div id="wrapper-passenger" class="p-1 rounded border border-transparent transition-all">
-                    <div class="flex justify-between text-xs mb-1">
-                        <span class="text-slate-400">PASSENGER WEIGHT</span>
-                        <span class="text-amber-500 font-bold"><span id="lbl-passenger">0</span> kg</span>
-                    </div>
-                    <input type="range" id="slide-passenger" min="0" max="129" value="0" class="w-full" oninput="runCalculations()">
-                </div>
-
-                <div id="wrapper-fuel" class="p-1 rounded border border-transparent transition-all">
-                    <div class="flex justify-between text-xs mb-1">
-                        <span class="text-slate-400">FUEL LOAD</span>
-                        <span class="text-amber-500 font-bold"><span id="lbl-fuel">30</span> Litres</span>
-                    </div>
-                    <input type="range" id="slide-fuel" min="5" max="70" value="30" class="w-full" oninput="runCalculations()">
-                </div>
-
-                <div id="wrapper-runway" class="p-1 rounded border border-transparent transition-all">
-                    <div class="flex justify-between text-xs mb-1">
-                        <span class="text-slate-400">RUNWAY LENGTH</span>
-                        <span class="text-amber-500 font-bold"><span id="lbl-runway">400</span> m</span>
-                    </div>
-                    <input type="range" id="slide-runway" min="150" max="1500" value="400" class="w-full" oninput="runCalculations()">
-                </div>
-
-                <!-- SURFACE & CONDITION SWITCHES -->
-                <div class="grid grid-cols-2 gap-2 mt-1">
-                    <button id="toggle-surface" onclick="toggleSurface()" class="py-1.5 px-2 bg-slate-800 border border-slate-700 text-[11px] rounded uppercase font-bold text-slate-300 cursor-pointer">Surface: Tarmac</button>
-                    <button id="toggle-condition" onclick="toggleCondition()" class="py-1.5 px-2 bg-slate-800 border border-slate-700 text-[11px] rounded uppercase font-bold text-slate-300 cursor-pointer">Condition: Dry</button>
-                </div>
-            </div>
-
-            <!-- RESULTS LIST -->
-            <div class="panel p-3 rounded text-xs flex flex-col gap-1.5">
-                <div id="row-weight" class="flex justify-between p-1 rounded border border-transparent transition-all"><span class="text-slate-500">TOTAL WEIGHT:</span><span><span id="out-tom">--</span> kg / 500 kg max</span></div>
-                <div class="flex justify-between p-0.5"><span class="text-slate-500">TEMPERATURE:</span><span id="out-temp">--</span></div>
-                <div class="flex justify-between p-0.5"><span class="text-slate-500">WIND:</span><span id="out-wind">--</span></div>
-                <div id="row-wind" class="flex justify-between p-1 rounded border border-transparent transition-all"><span class="text-slate-500">HEADWIND BENEFIT:</span><span id="out-hw" class="font-bold">--</span></div>
-                <div class="flex justify-between p-0.5 text-amber-500"><span class="text-slate-400">BEST RUNWAY TO USE:</span><span id="out-rec-rwy" class="font-bold">--</span></div>
-                <div class="flex justify-between p-0.5"><span class="text-slate-500">ESTIMATED GROUND ROLL:</span><span><span id="out-torr" class="font-bold">--</span> m</span></div>
-                <div id="row-runway-need" class="flex justify-between p-1 rounded border border-transparent transition-all text-emerald-400"><span class="text-slate-400">TOTAL RUNWAY NEEDED (WITH SAFETY FACTOR):</span><span><span id="out-todr" class="font-bold">--</span> m</span></div>
-            </div>
-
-            <!-- ADVISORIES STRINGS -->
-            <div id="advisories-log" class="text-[11px] leading-relaxed flex flex-col gap-1 p-1"></div>
-        </div>
-
-        <!-- CONFIGURATION SETTINGS TAB -->
-        <div id="tab-config" class="flex flex-col gap-3 hidden">
-            <!-- HOME AIRFIELD CONFIGURATION -->
-            <div class="panel p-3 rounded border-amber-500/30">
-                <h3 class="text-xs font-bold text-amber-500 uppercase mb-2 border-b border-slate-800 pb-1">Home Airfield Parameters</h3>
-                <form id="home-form" onsubmit="saveHomeAirfield(event)" class="flex flex-col gap-2 text-xs">
-                    <div class="flex flex-col">
-                        <label class="text-slate-400 mb-0.5">Airfield Name</label>
-                        <input type="text" id="home-name" required value="Rufforth East" class="bg-slate-900 border border-slate-700 rounded p-1.5 text-white font-bold">
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div class="flex flex-col">
-                            <label class="text-slate-400 mb-0.5">Latitude</label>
-                            <input type="number" step="0.0001" id="home-lat" required value="53.9530" class="bg-slate-900 border border-slate-700 rounded p-1.5 text-white">
-                        </div>
-                        <div class="flex flex-col">
-                            <label class="text-slate-400 mb-0.5">Longitude</label>
-                            <input type="number" step="0.0001" id="home-lon" required value="-1.1808" class="bg-slate-900 border border-slate-700 rounded p-1.5 text-white">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div class="flex flex-col">
-                            <label class="text-slate-400 mb-0.5">Runway Length (m)</label>
-                            <input type="number" id="home-len" required value="600" class="bg-slate-900 border border-slate-700 rounded p-1.5 text-white">
-                        </div>
-                        <div class="flex flex-col">
-                            <label class="text-slate-400 mb-0.5">Headings (comma separated)</label>
-                            <input type="text" id="home-hdgs" required value="50, 230" class="bg-slate-900 border border-slate-700 rounded p-1.5 text-white font-bold">
-                        </div>
-                    </div>
-                    <button type="submit" class="mt-1 bg-amber-500 text-black font-bold uppercase py-2 rounded text-xs cursor-pointer">Save Home Airfield Profile</button>
-                </form>
-            </div>
-
-            <!-- AIRFRAME PROFILES -->
-            <div class="panel p-3 rounded">
-                <h3 class="text-xs font-bold text-amber-500 uppercase mb-2 border-b border-slate-800 pb-1">Add / Edit Aircraft</h3>
-                <form id="profile-form" onsubmit="saveAirframe(event)" class="flex flex-col gap-2 text-xs">
-                    <div class="flex flex-col">
-                        <label class="text-slate-400 mb-0.5">Registration</label>
-                        <input type="text" id="cfg-reg" required placeholder="e.g. G-CFVG" class="bg-slate-900 border border-slate-700 rounded p-1.5 text-white uppercase font-bold">
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div class="flex flex-col">
-                            <label class="text-slate-400 mb-0.5">Empty Weight (kg)</label>
-                            <input type="number" id="cfg-empty" required value="245" class="bg-slate-900 border border-slate-700 rounded p-1.5 text-white">
-                        </div>
-                        <div class="flex flex-col">
-                            <label class="text-slate-400 mb-0.5">Base Takeoff Roll (m)</label>
-                            <input type="number" id="cfg-tor" required value="170" class="bg-slate-900 border border-slate-700 rounded p-1.5 text-white">
-                        </div>
-                    </div>
-                    <button type="submit" class="mt-2 bg-emerald-600 text-black font-bold uppercase py-2 rounded text-xs cursor-pointer">Save Aircraft Profile</button>
-                </form>
-            </div>
-
-            <div class="panel p-3 rounded">
-                <h3 class="text-xs font-bold text-slate-400 uppercase mb-2 border-b border-slate-800 pb-1">Configured Aircraft</h3>
-                <div id="profiles-list-box" class="flex flex-col gap-2 text-xs"></div>
-            </div>
-        </div>
-
-    </main>
-
-    <!-- UNTESTED SOFTWARE WARNING DISCLAIMER -->
-    <div class="panel p-2.5 rounded border-red-900/60 bg-red-950/20 text-[10px] text-red-300 leading-normal mt-3 text-center">
-        <strong>⚠️ DISCLAIMER:</strong> This app is completely untested and contains estimated performance calculations. Do not rely on these results for flight planning. Always consult the official flight manual before flying.
     </div>
 
-    <!-- FOOTER -->
-    <footer class="text-center text-[9px] text-slate-600 mt-2 uppercase">
-        MTO-Sport Performance App &bull; Local Storage Data
-    </footer>
+    <div class="output-box" id="matrixOutput">Results will appear here...</div>
+</div>
 
-    <!-- APP ENGINE LOGIC -->
-    <script>
-        // High-fidelity local database covering neighboring strips / airfields
-        const regionalAirfieldDb = [
-            { id: "GB-0248", name: "Rufforth East", lat: 53.9530, lon: -1.1808, rwyLen: 600, headings: [50, 230] },
-            { id: "EGCJ", name: "Sherburn-in-Elmet", lat: 53.7844, lon: -1.2139, rwyLen: 830, headings: [110, 290, 60, 240] },
-            { id: "EGCM", name: "Leeds East", lat: 53.8322, lon: -1.2017, rwyLen: 1182, headings: [160, 340, 100, 280] },
-            { id: "GB-0066", name: "Eddsfield", lat: 54.1113, lon: -0.4619, rwyLen: 700, headings: [90, 270] },
-            { id: "EGNY", name: "Beverley Linley Hill", lat: 53.8828, lon: -0.3847, rwyLen: 645, headings: [120, 300, 70, 250] },
-            { id: "EG84", name: "Fadmoor", lat: 54.3086, lon: -0.9738, rwyLen: 650, headings: [130, 310] },
-            { id: "EGNM", name: "Leeds Bradford", lat: 53.8658, lon: -1.6606, rwyLen: 2250, headings: [140, 320] }
-        ];
+<script>
+    // Configuration Constants
+    const HOME_AIRFIELD = "Rufforth East"; //
 
-        let currentAirfieldData = null;
-        let lastWeatherFetchTime = null;
+    // DOM Elements
+    const airfieldInput = document.getElementById('airfieldInput');
+    const homeBtn = document.getElementById('homeBtn');
+    const searchBtn = document.getElementById('searchBtn');
+    const matrixOutput = document.getElementById('matrixOutput');
 
-        let state = {
-            profiles: [
-                { reg: "G-IROI", emptyWeight: 245, baseTor: 170 }
-            ],
-            currentReg: "G-IROI",
-            isGrass: false,
-            isWet: false,
-            weather: { temp: 15, windDir: 0, windSpeed: 0 },
-            homeAirfield: {
-                name: "Rufforth East",
-                lat: 53.9530,
-                lon: -1.1808,
-                rwyLen: 600,
-                headings: [50, 230]
-            }
-        };
+    // Home Airfield Functionality
+    function setHomeAirfield() {
+        airfieldInput.value = HOME_AIRFIELD.toUpperCase();
+        matrixOutput.textContent = `Selected home airfield: ${HOME_AIRFIELD}\nClick Search to retrieve data.`;
+    }
 
-        window.addEventListener('DOMContentLoaded', () => {
-            console.log("[INIT] System startup. Syncing stored settings...");
-            
-            if(localStorage.getItem('mto_pwa_profiles')) {
-                state.profiles = JSON.parse(localStorage.getItem('mto_pwa_profiles'));
-            }
-            if(state.profiles.length > 0) state.currentReg = state.profiles[0].reg;
-            
-            if(localStorage.getItem('mto_home_airfield')) {
-                state.homeAirfield = JSON.parse(localStorage.getItem('mto_home_airfield'));
-                // Populate forms
-                document.getElementById('home-name').value = state.homeAirfield.name;
-                document.getElementById('home-lat').value = state.homeAirfield.lat;
-                document.getElementById('home-lon').value = state.homeAirfield.lon;
-                document.getElementById('home-len').value = state.homeAirfield.rwyLen;
-                document.getElementById('home-hdgs').value = state.homeAirfield.headings.join(', ');
-            }
-            
-            rebuildDropdown();
-            renderConfigProfiles();
-            
-            // Absolute structural fix: Load the default state instantly on render execution
-            loadHomeAirfield(true);
-            
-            setInterval(updateWeatherAgeDisplay, 1000);
-        });
-
-        function loadHomeAirfield(isSilentInit = false) {
-            console.log("[HOME TARGET] Recalling home profiles setup Configuration:", state.homeAirfield);
-            currentAirfieldData = { 
-                id: "HOME",
-                name: state.homeAirfield.name,
-                lat: state.homeAirfield.lat,
-                lon: state.homeAirfield.lon,
-                rwyLen: state.homeAirfield.rwyLen,
-                headings: state.homeAirfield.headings
-            };
-
-            document.getElementById('calc-icao').value = currentAirfieldData.name;
-            document.getElementById('slide-runway').value = currentAirfieldData.rwyLen;
-            document.getElementById('lbl-runway').innerText = currentAirfieldData.rwyLen;
-
-            if(!isSilentInit) {
-                fetchWeatherMatrix();
-            } else {
-                runCalculations();
-            }
+    // Search Execution Function
+    function performSearch() {
+        const query = airfieldInput.value.trim();
+        
+        if (!query) {
+            matrixOutput.textContent = "Error: Please enter an airfield target or click 'Home Airfield'.";
+            return;
         }
 
-        function saveHomeAirfield(e) {
-            e.preventDefault();
-            const name = document.getElementById('home-name').value.trim();
-            const lat = parseFloat(document.getElementById('home-lat').value);
-            const lon = parseFloat(document.getElementById('home-lon').value);
-            const rwyLen = parseInt(document.getElementById('home-len').value);
-            const headings = document.getElementById('home-hdgs').value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+        matrixOutput.textContent = `Querying data for [${query.toUpperCase()}]...\n\n[Matrix Results Stub]\n- Temperature: ---\n- QNH: ---\n- Wind: ---\n- Density Altitude: ---`;
+        
+        // TODO: Integrate actual dynamic fetch/calculation matrix logic here
+    }
 
-            state.homeAirfield = { name, lat, lon, rwyLen, headings };
-            localStorage.setItem('mto_home_airfield', JSON.stringify(state.homeAirfield));
-            
-            console.log("[SETTINGSED] Home profile modified saved.");
-            loadHomeAirfield(false);
-            switchTab('calc');
+    // Event Listeners
+    homeBtn.addEventListener('click', setHomeAirfield);
+    searchBtn.addEventListener('click', performSearch);
+    
+    // Allow pressing enter inside the input box to trigger search
+    airfieldInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            performSearch();
         }
+    });
+</script>
 
-        function switchTab(tab) {
-            if(tab === 'calc') {
-                document.getElementById('tab-calc').classList.remove('hidden');
-                document.getElementById('tab-config').classList.add('hidden');
-                document.getElementById('tab-calc-btn').className = "px-2.5 py-1.5 bg-amber-500 text-black font-bold text-[11px] uppercase rounded cursor-pointer";
-                document.getElementById('tab-config-btn').className = "px-2.5 py-1.5 bg-slate-800 text-slate-300 font-bold text-[11px] uppercase rounded cursor-pointer";
-            } else {
-                document.getElementById('tab-calc').classList.add('hidden');
-                document.getElementById('tab-config').classList.remove('hidden');
-                document.getElementById('tab-calc-btn').className = "px-2.5 py-1.5 bg-slate-800 text-slate-300 font-bold text-[11px] uppercase rounded cursor-pointer";
-                document.getElementById('tab-config-btn').className = "px-2.5 py-1.5 bg-amber-500 text-black font-bold text-[11px] uppercase rounded cursor-pointer";
-            }
-        }
-
-        function toggleSurface() {
-            state.isGrass = !state.isGrass;
-            const btn = document.getElementById('toggle-surface');
-            btn.innerText = state.isGrass ? "Surface: Grass" : "Surface: Tarmac";
-            btn.className = state.isGrass ? "py-1.5 px-2 bg-amber-950/40 border border-amber-800 text-[11px] rounded uppercase font-bold text-amber-400 cursor-pointer" : "py-1.5 px-2 bg-slate-800 border border-slate-700 text-[11px] rounded uppercase font-bold text-slate-300 cursor-pointer";
-            runCalculations();
-        }
-
-        function toggleCondition() {
-            state.isWet = !state.isWet;
-            const btn = document.getElementById('toggle-condition');
-            btn.innerText = state.isWet ? "Condition: Wet" : "Condition: Dry";
-            btn.className = state.isWet ? "py-1.5 px-2 bg-blue-950/40 border border-blue-800 text-[11px] rounded uppercase font-bold text-blue-400 cursor-pointer" : "py-1.5 px-2 bg-slate-800 border border-slate-700 text-[11px] rounded uppercase font-bold text-slate-300 cursor-pointer";
-            runCalculations();
-        }
-
-        function rebuildDropdown() {
-            const select = document.getElementById('calc-profile-select');
-            select.innerHTML = '';
-            state.profiles.forEach(p => {
-                let opt = document.createElement('option');
-                opt.value = p.reg;
-                opt.innerText = p.reg;
-                select.appendChild(opt);
-            });
-            select.value = state.currentReg;
-        }
-
-        function loadActiveProfile() {
-            state.currentReg = document.getElementById('calc-profile-select').value;
-            runCalculations();
-        }
-
-        function updateWeatherAgeDisplay() {
-            if(!lastWeatherFetchTime) return;
-            const diffSeconds = Math.floor((new Date() - lastWeatherFetchTime) / 1000);
-            document.getElementById('weather-age-counter').innerText = diffSeconds;
-        }
-
-        function syncAirfieldAndWeather() {
-            const searchInput = document.getElementById('calc-icao').value.trim().toUpperCase();
-            const feedback = document.getElementById('sync-feedback');
-            
-            console.log(`[SEARCH] Query pattern matched text string: "${searchInput}"`);
-            
-            if (searchInput === "") {
-                loadHomeAirfield(false);
-                return;
-            }
-
-            // Fuzzy match text lookup profile array engine
-            const matched = regionalAirfieldDb.find(item => 
-                item.id.toUpperCase().includes(searchInput) || 
-                item.name.toUpperCase().includes(searchInput)
-            );
-
-            if (!matched) {
-                console.warn(`[SEARCH FAILED] Fallback forced to default profile settings array`);
-                feedback.className = "text-[10px] text-red-400 mt-1";
-                feedback.innerText = `"${searchInput}" not matched. Loading Home Airfield instead.`;
-                loadHomeAirfield(false);
-                return;
-            }
-
-            currentAirfieldData = { ...matched };
-            document.getElementById('calc-icao').value = currentAirfieldData.name;
-            document.getElementById('slide-runway').value = currentAirfieldData.rwyLen;
-            document.getElementById('lbl-runway').innerText = currentAirfieldData.rwyLen;
-
-            fetchWeatherMatrix();
-        }
-
-        function fetchWeatherMatrix() {
-            const feedback = document.getElementById('sync-feedback');
-            feedback.className = "text-[10px] text-amber-400 mt-1 animate-pulse";
-            feedback.innerText = `Fetching meteorological indices for ${currentAirfieldData.name}...`;
-
-            const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${currentAirfieldData.lat}&longitude=${currentAirfieldData.lon}&current=temperature_2m,wind_speed_10m,wind_direction_10m&wind_speed_unit=kn`;
-
-            fetch(weatherUrl)
-                .then(res => {
-                    if(!res.ok) throw new Error("API returned bad response sequence.");
-                    return res.json();
-                })
-                .then(weatherData => {
-                    state.weather.temp = Math.round(weatherData.current.temperature_2m);
-                    state.weather.windDir = weatherData.current.wind_direction_10m;
-                    state.weather.windSpeed = Math.round(weatherData.current.wind_speed_10m);
-
-                    lastWeatherFetchTime = new Date();
-                    document.getElementById('weather-timestamp').innerText = lastWeatherFetchTime.toTimeString().split(' ')[0];
-                    document.getElementById('weather-age-container').classList.remove('hidden');
-
-                    feedback.className = "text-[10px] text-emerald-400 mt-1";
-                    feedback.innerText = `Loaded ${currentAirfieldData.name} (${currentAirfieldData.rwyLen}m) successfully.`;
-                    
-                    runCalculations();
-                })
-                .catch(err => {
-                    console.error("[WEATHER SYNC FAULT]", err);
-                    feedback.className = "text-[10px] text-red-400 mt-1";
-                    feedback.innerText = `Live Link Issue: ${err.message}`;
-                    runCalculations();
-                });
-        }
-
-        function runCalculations() {
-            const activeProfile = state.profiles.find(p => p.reg === state.currentReg);
-            if(!activeProfile) return;
-
-            document.getElementById('hud-reg').innerText = activeProfile.reg;
-
-            const pwt = parseFloat(document.getElementById('slide-pilot').value);
-            const paxwt = parseFloat(document.getElementById('slide-passenger').value);
-            const fuelL = parseFloat(document.getElementById('slide-fuel').value);
-            const rwyAvail = parseFloat(document.getElementById('slide-runway').value);
-
-            const fuelMass = fuelL * 0.72;
-            const tom = activeProfile.emptyWeight + pwt + paxwt + fuelMass;
-
-            document.getElementById('lbl-pilot').innerText = pwt;
-            document.getElementById('lbl-passenger').innerText = paxwt;
-            document.getElementById('lbl-fuel').innerText = fuelL;
-            document.getElementById('lbl-runway').innerText = rwyAvail;
-
-            let selectedRwyHdg = 0;
-            let targetRwyString = "MANUAL";
-
-            if(currentAirfieldData && currentAirfieldData.headings) {
-                const headings = currentAirfieldData.headings;
-                let optimalHeadwind = -999;
-                
-                headings.forEach(hdg => {
-                    const diffRad = ((state.weather.windDir - hdg) * Math.PI) / 180;
-                    const hwComp = state.weather.windSpeed * Math.cos(diffRad);
-                    if(hwComp > optimalHeadwind) {
-                        optimalHeadwind = hwComp;
-                        selectedRwyHdg = hdg;
-                    }
-                });
-                
-                const paddedLabel = String(Math.round(selectedRwyHdg/10)).padStart(2, '0');
-                targetRwyString = `RWY ${paddedLabel}`;
-            }
-
-            const radDiff = ((state.weather.windDir - selectedRwyHdg) * Math.PI) / 180;
-            const headwind = Math.round(state.weather.windSpeed * Math.cos(radDiff));
-
-            let torr = activeProfile.baseTor * Math.pow((tom / 500), 2);
-            const da = Math.max(0, 120 * (state.weather.temp - 15));
-            torr *= (1 + (da / 1000) * 0.10);
-
-            if(state.isGrass) torr *= 1.20;
-            if(state.isWet) torr *= 1.10;
-
-            if (headwind > 0) {
-                torr *= (1 - (headwind * 0.01));
-            } else if (headwind < 0) {
-                torr *= (1 + (Math.abs(headwind) * 0.04));
-            }
-
-            const todr = torr * 1.33;
-
-            document.getElementById('out-tom').innerText = tom.toFixed(1);
-            document.getElementById('out-temp').innerText = `${state.weather.temp} °C`;
-            document.getElementById('out-wind').innerText = `${String(state.weather.windDir).padStart(3, '0')}° @ ${state.weather.windSpeed} KT`;
-            document.getElementById('out-hw').innerText = `${Math.abs(headwind)} KT ${headwind >= 0 ? 'HW' : 'TW'}`;
-            document.getElementById('out-rec-rwy').innerText = targetRwyString;
-            document.getElementById('out-torr').innerText = Math.round(torr);
-            document.getElementById('out-todr').innerText = Math.round(todr);
-
-            const card = document.getElementById('rag-status-card');
-            const text = document.getElementById('rag-status-text');
-            const log = document.getElementById('advisories-log');
-            
-            const wrapPilot = document.getElementById('wrapper-pilot');
-            const wrapPax = document.getElementById('wrapper-passenger');
-            const wrapFuel = document.getElementById('wrapper-fuel');
-            const wrapRunway = document.getElementById('wrapper-runway');
-            
-            const rowWeight = document.getElementById('row-weight');
-            const rowWind = document.getElementById('row-wind');
-            const rowRunwayNeed = document.getElementById('row-runway-need');
-
-            wrapPilot.style.backgroundColor = "transparent"; wrapPilot.style.borderColor = "transparent";
-            wrapPax.style.backgroundColor = "transparent"; wrapPax.style.borderColor = "transparent";
-            wrapFuel.style.backgroundColor = "transparent"; wrapFuel.style.borderColor = "transparent";
-            wrapRunway.style.backgroundColor = "transparent"; wrapRunway.style.borderColor = "transparent";
-            
-            rowWeight.style.backgroundColor = "transparent"; rowWeight.style.borderColor = "transparent"; rowWeight.style.color = "#ffffff";
-            rowWind.style.backgroundColor = "transparent"; rowWind.style.borderColor = "transparent"; rowWind.style.color = "#ffffff";
-            rowRunwayNeed.style.backgroundColor = "transparent"; rowRunwayNeed.style.borderColor = "transparent"; rowRunwayNeed.style.color = "#34d399";
-
-            let logs = [];
-            let flag = "GREEN";
-            const weightAmberLimit = 500 * 0.80;
-
-            if (tom > 500) {
-                flag = "RED";
-                logs.push("<span class='text-red-400 font-bold'>[!] OVERWEIGHT: Total weight exceeds 500 kg maximum limit!</span>");
-                rowWeight.style.backgroundColor = "rgba(239, 68, 68, 0.15)";
-                rowWeight.style.borderColor = "#ef4444";
-                rowWeight.style.color = "#ef4444";
-                [wrapPilot, wrapPax, wrapFuel].forEach(el => {
-                    el.style.backgroundColor = "rgba(239, 68, 68, 0.1)";
-                    el.style.borderColor = "rgba(239, 68, 68, 0.4)";
-                });
-            } else if (tom >= weightAmberLimit) {
-                if (flag !== "RED") flag = "AMBER";
-                logs.push("<span class='text-amber-400 font-bold'>[!] MARGINAL: Total weight is close to limits (above 80%).</span>");
-                rowWeight.style.backgroundColor = "rgba(245, 158, 11, 0.15)";
-                rowWeight.style.borderColor = "#f59e0b";
-                rowWeight.style.color = "#f59e0b";
-                [wrapPilot, wrapPax, wrapFuel].forEach(el => {
-                    el.style.backgroundColor = "rgba(245, 158, 11, 0.08)";
-                    el.style.borderColor = "rgba(245, 158, 11, 0.3)";
-                });
-            }
-
-            if (todr > rwyAvail) {
-                flag = "RED";
-                logs.push("<span class='text-red-400 font-bold'>[!] DANGER: Takeoff distance required exceeds available runway!</span>");
-                rowRunwayNeed.style.backgroundColor = "rgba(239, 68, 68, 0.15)";
-                rowRunwayNeed.style.borderColor = "#ef4444";
-                rowRunwayNeed.style.color = "#ef4444";
-                wrapRunway.style.backgroundColor = "rgba(239, 68, 68, 0.1)";
-                wrapRunway.style.borderColor = "rgba(239, 68, 68, 0.4)";
-            } else if (todr >= (rwyAvail * 0.80)) {
-                if (flag !== "RED") flag = "AMBER";
-                logs.push("<span class='text-amber-400 font-bold'>[!] MARGINAL: Required distance uses over 80% of available space.</span>");
-                rowRunwayNeed.style.backgroundColor = "rgba(245, 158, 11, 0.15)";
-                rowRunwayNeed.style.borderColor = "#f59e0b";
-                rowRunwayNeed.style.color = "#f59e0b";
-                wrapRunway.style.backgroundColor = "rgba(245, 158, 11, 0.08)";
-                wrapRunway.style.borderColor = "rgba(245, 158, 11, 0.3)";
-            }
-
-            if (headwind < -5) {
-                if (flag !== "RED") flag = "AMBER";
-                logs.push("<span class='text-amber-400 font-bold'>[!] WARNING: Operating with a tailwind component over 5 KT.</span>");
-                rowWind.style.backgroundColor = "rgba(245, 158, 11, 0.15)";
-                rowWind.style.borderColor = "#f59e0b";
-                rowWind.style.color = "#f59e0b";
-            }
-
-            if (logs.length === 0) {
-                logs.push("<span class='text-emerald-400'>[✓] ALL PERFORMANCE CHECKS GOOD</span>");
-            }
-            log.innerHTML = logs.join("");
-
-            card.className = "p-4 rounded border-2 text-center flex flex-col justify-center items-center my-1 transition-all duration-300";
-            if (flag === "GREEN") {
-                card.classList.add('rag-green');
-                text.innerText = "OK";
-            } else if (flag === "AMBER") {
-                card.classList.add('rag-amber');
-                text.innerText = "MARGINAL";
-            } else {
-                card.classList.add('rag-red');
-                text.innerText = "NOT OK";
-            }
-        }
-
-        function renderConfigProfiles() {
-            const container = document.getElementById('profiles-list-box');
-            container.innerHTML = '';
-            state.profiles.forEach(p => {
-                let div = document.createElement('div');
-                div.className = "p-2 bg-slate-900 rounded flex justify-between items-center border border-slate-800";
-                div.innerHTML = `
-                    <div>
-                        <span class="font-bold text-amber-500">${p.reg}</span>
-                        <span class="text-[10px] text-slate-400 block">Empty: ${p.emptyWeight}kg | Base Roll: ${p.baseTor}m</span>
-                    </div>
-                    <button onclick="removeAirframe('${p.reg}')" class="text-red-400 font-bold hover:underline cursor-pointer">Delete</button>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        function saveAirframe(e) {
-            e.preventDefault();
-            const reg = document.getElementById('cfg-reg').value.toUpperCase().trim();
-            const emptyWeight = parseFloat(document.getElementById('cfg-empty').value);
-            const baseTor = parseFloat(document.getElementById('cfg-tor').value);
-
-            const index = state.profiles.findIndex(p => p.reg === reg);
-            if(index > -1) {
-                state.profiles[index] = { reg, emptyWeight, baseTor };
-            } else {
-                state.profiles.push({ reg, emptyWeight, baseTor });
-            }
-
-            localStorage.setItem('mto_pwa_profiles', JSON.stringify(state.profiles));
-            state.currentReg = reg;
-            
-            rebuildDropdown();
-            renderConfigProfiles();
-            runCalculations();
-            document.getElementById('profile-form').reset();
-            switchTab('calc');
-        }
-
-        function removeAirframe(reg) {
-            if(state.profiles.length <= 1) {
-                alert("At least one aircraft profile must remain configured.");
-                return;
-            }
-            state.profiles = state.profiles.filter(p => p.reg !== reg);
-            localStorage.setItem('mto_pwa_profiles', JSON.stringify(state.profiles));
-            if(state.currentReg === reg) state.currentReg = state.profiles[0].reg;
-            
-            rebuildDropdown();
-            renderConfigProfiles();
-            runCalculations();
-        }
-    </script>
 </body>
 </html>
