@@ -3,187 +3,444 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aircraft Performance & Airfield Calculator</title>
+    <title>Aviation Performance & Weather Matrix</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 20px; background: #f5f5f5; color: #333; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .section { margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; }
-        input[type="text"] { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
-        button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-primary { background: #007bff; color: white; }
-        .btn-secondary { background: #6c757d; color: white; }
-        .btn-success { background: #28a745; color: white; }
-        .results-box { background: #e9ecef; padding: 15px; border-radius: 4px; margin-top: 15px; }
-        .status { font-style: italic; color: #666; margin-top: 5px; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #1e1e1e;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin: 0;
+            color: #fff;
+        }
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+        }
+        .nav-tab {
+            padding: 8px 16px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #aaa;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .nav-tab.active {
+            background: #007acc;
+            color: #fff;
+            border-color: #007acc;
+        }
+        .tab-panel {
+            display: none;
+        }
+        .tab-panel.active {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        .form-row .form-group {
+            flex: 1;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 10px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        input[type="text"] {
+            text-transform: uppercase;
+        }
+        input:focus, select:focus {
+            border-color: #007acc;
+            outline: none;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        .btn-primary {
+            background-color: #007acc;
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background-color: #0062a3;
+        }
+        .btn-secondary {
+            background-color: #3a3a3a;
+            color: #e0e0e0;
+        }
+        .btn-secondary:hover {
+            background-color: #4a4a4a;
+        }
+        .btn-success {
+            background-color: #28a745;
+            color: #fff;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .btn-success:hover {
+            background-color: #218838;
+        }
+        .output-box {
+            margin-top: 20px;
+            background: #151515;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 15px;
+            min-height: 100px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            color: #a6e22e;
+            line-height: 1.5;
+        }
+        .highlight {
+            color: #66d9ef;
+            font-weight: bold;
+        }
+        .alert-text {
+            color: #f92672;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Aircraft & Airfield Configuration</h2>
+    <header>
+        <h1>Gyro Performance Matrix</h1>
+        <div class="nav-tabs">
+            <div class="nav-tab active" onclick="switchTab('calc')">Calculator</div>
+            <div class="nav-tab" onclick="switchTab('config')">Settings Profile</div>
+        </div>
+    </header>
+    
+    <div id="panel-calc" class="tab-panel active">
+        <div class="form-group">
+            <label for="profileSelect">Active Aircraft Profile</label>
+            <select id="profileSelect" onchange="handleProfileChange()"></select>
+        </div>
 
-    <!-- SECTION 1: Aircraft & Home Airfield Configuration -->
-    <div class="section">
-        <h3>1. Aircraft Configuration (Saved Settings)</h3>
         <div class="form-group">
-            <label for="aircraftReg">Aircraft Registration</label>
-            <input type="text" id="aircraftReg" value="G-IROI">
+            <label for="airfieldInput">Airfield ICAO / Name</label>
+            <div class="input-row">
+                <input type="text" id="airfieldInput" placeholder="e.g. EGXU or Sherburn" autocomplete="off">
+                <button type="button" class="btn-secondary" id="homeBtn">🏠 Home Base</button>
+                <button type="button" class="btn-primary" id="searchBtn">Search</button>
+            </div>
         </div>
-        <div class="form-group">
-            <label for="homeAirfield">Saved Home Airfield (ICAO/Name)</label>
-            <input type="text" id="homeAirfield" placeholder="e.g., EGBX or Rufforth East">
-        </div>
-        <button class="btn-success" onclick="saveConfiguration()">Save Configuration</button>
-        <div id="configStatus" class="status"></div>
+
+        <div class="output-box" id="matrixOutput">Initializing profile parameters...</div>
     </div>
 
-    <!-- SECTION 2: Calculator App Interface -->
-    <div class="section">
-        <h3>2. Performance Calculator</h3>
-        <div class="form-group">
-            <label for="airfieldSearch">Search Airfield Database</label>
-            <input type="text" id="airfieldSearch" placeholder="Enter airfield name or ICAO code...">
-        </div>
-        <div class="btn-group">
-            <button class="btn-primary" onclick="searchAirfield()">Search Airfield</button>
-            <button class="btn-secondary" onclick="loadHomeAirfield()">🏠 Use Home Airfield</button>
-        </div>
-    </div>
+    <div id="panel-config" class="tab-panel">
+        <h2 style="font-size: 1.2rem; color: #fff; margin-top: 0;">Aircraft & Coupled Home Base Configuration</h2>
+        <form id="configForm" onsubmit="saveProfile(event)">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="cfgReg">Aircraft Registration</label>
+                    <input type="text" id="cfgReg" required placeholder="G-IROI">
+                </div>
+                <div class="form-group">
+                    <label for="cfgEmpty">Empty Weight (kg)</label>
+                    <input type="number" id="cfgEmpty" required value="245">
+                </div>
+            </div>
 
-    <!-- SECTION 3: Dynamic Outputs -->
-    <div class="section">
-        <h3>Current Airfield Environment & Performance</h3>
-        <div class="results-box">
-            <p><strong>Selected Airfield:</strong> <span id="outAirfield">None</span></p>
-            <p><strong>Runways Available:</strong> <span id="outRunways">--</span></p>
-            <p><strong>Current Wind (METAR):</strong> <span id="outWind">--</span></p>
-            <p><strong>Calculated Best Runway:</strong> <span id="outBestRunway" style="color: #007bff; font-weight: bold;">--</span></p>
-        </div>
+            <div style="border-top: 1px solid #333; margin: 15px 0; padding-top: 15px;">
+                <label style="color: #007acc; font-weight: bold; font-size: 0.95rem;">Coupled Home Airfield Parameters</label>
+            </div>
+
+            <div class="form-group">
+                <label for="cfgHomeName">Home Airfield Name / ID</label>
+                <input type="text" id="cfgHomeName" required placeholder="Rufforth East">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="cfgHomeLat">Latitude (Decimal)</label>
+                    <input type="number" step="0.0001" id="cfgHomeLat" required value="53.9530">
+                </div>
+                <div class="form-group">
+                    <label for="cfgHomeLon">Longitude (Decimal)</label>
+                    <input type="number" step="0.0001" id="cfgHomeLon" required value="-1.1808">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="cfgHomeLen">Runway Length Available (m)</label>
+                    <input type="number" id="cfgHomeLen" required value="600">
+                </div>
+                <div class="form-group">
+                    <label for="cfgHomeHdgs">Runway Heading Designators (Comma separated)</label>
+                    <input type="text" id="cfgHomeHdgs" required placeholder="50, 230">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-success">Save Profile Configuration</button>
+        </form>
     </div>
 </div>
 
 <script>
-// Mock Local Database of Airfields
-const airfieldDatabase = {
-    "EGXU": { name: "Rufforth East", runways: ["05", "23"], lat: 53.95, lon: -1.18 },
-    "RUFFORTH EAST": { name: "Rufforth East", runways: ["05", "23"], lat: 53.95, lon: -1.18 },
-    "EGBX": { name: "Woburn Park", runways: ["12", "30"], lat: 51.98, lon: -0.59 },
-    "EGCA": { name: "Caernarfon", runways: ["07", "25", "02", "20"], lat: 53.10, lon: -4.33 }
-};
-
-// Mock Weather API Selector
-function fetchMockWeather(icao) {
-    // In a real app, this would be an fetch() call to an aviation weather API
-    const variations = [
-        { text: "210 degrees at 12 knots", heading: 210, speed: 12 },
-        { text: "040 degrees at 08 knots", heading: 40, speed: 8 },
-        { text: "290 degrees at 15 knots", heading: 290, speed: 15 }
+    // Local fallback regional database lookup
+    const localAirfieldDatabase = [
+        { id: "GB-0248", name: "RUFFORTH EAST", lat: 53.9530, lon: -1.1808, rwyLen: 600, headings: [50, 230] },
+        { id: "EGXU", name: "RUFFORTH EAST", lat: 53.9530, lon: -1.1808, rwyLen: 600, headings: [50, 230] },
+        { id: "EGCJ", name: "SHERBURN-IN-ELMET", lat: 53.7844, lon: -1.2139, rwyLen: 830, headings: [110, 290, 60, 240] },
+        { id: "EGCM", name: "LEEDS EAST", lat: 53.8322, lon: -1.2017, rwyLen: 1182, headings: [160, 340, 100, 280] }
     ];
-    // Return a semi-random string based on the airfield string length for consistency
-    return variations[icao.length % variations.length];
-}
 
-// Simple Runway Selector Math (Finds runway with minimum crosswind / maximum headwind component)
-function calculateBestRunway(runways, windHeading) {
-    if (!runways || runways.length === 0) return "N/A";
-    
-    let bestRunway = runways[0];
-    let minDifference = 180;
-
-    runways.forEach(rw => {
-        // Convert runway shorthand (e.g. "05") to degrees (50 degrees)
-        const rwHeading = parseInt(rw, 10) * 10;
-        let diff = Math.abs(rwHeading - windHeading);
-        if (diff > 180) diff = 360 - diff;
-        
-        if (diff < minDifference) {
-            minDifference = diff;
-            bestRunway = rw;
-        }
-    });
-
-    return bestRunway;
-}
-
-// Save config state to local browser storage
-function saveConfiguration() {
-    const config = {
-        registration: document.getElementById('aircraftReg').value,
-        homeAirfield: document.getElementById('homeAirfield').value.trim().toUpperCase()
+    // Global App Context State
+    let appState = {
+        profiles: [
+            {
+                reg: "G-IROI",
+                emptyWeight: 245,
+                homeAirfield: {
+                    name: "Rufforth East",
+                    lat: 53.9530,
+                    lon: -1.1808,
+                    rwyLen: 600,
+                    headings: [50, 230]
+                }
+            }
+        ],
+        activeReg: "G-IROI"
     };
-    
-    localStorage.setItem('aircraftConfig', JSON.stringify(config));
-    document.getElementById('configStatus').innerText = "Configuration saved successfully!";
-    setTimeout(() => { document.getElementById('configStatus').innerText = ""; }, 3000);
-}
 
-// Load initial config profile on startup
-function loadSavedConfigOnStartup() {
-    const saved = localStorage.getItem('aircraftConfig');
-    if (saved) {
-        const config = JSON.parse(saved);
-        document.getElementById('aircraftReg').value = config.registration;
-        document.getElementById('homeAirfield').value = config.homeAirfield;
-    }
-}
+    // DOM Elements
+    const airfieldInput = document.getElementById('airfieldInput');
+    const homeBtn = document.getElementById('homeBtn');
+    const searchBtn = document.getElementById('searchBtn');
+    const matrixOutput = document.getElementById('matrixOutput');
+    const profileSelect = document.getElementById('profileSelect');
 
-// Process data rendering when an airfield is matched
-function updateCalculatorUI(airfieldKey) {
-    const cleanKey = airfieldKey.toUpperCase();
-    const airfield = airfieldDatabase[cleanKey];
-
-    if (!airfield) {
-        alert("Airfield not found in local database lookup.");
-        return;
+    // UI Tab Navigation
+    function switchTab(tabId) {
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        
+        if(tabId === 'calc') {
+            document.querySelectorAll('.nav-tab')[0].classList.add('active');
+            document.getElementById('panel-calc').classList.add('active');
+        } else {
+            document.querySelectorAll('.nav-tab')[1].classList.add('active');
+            document.getElementById('panel-config').classList.add('active');
+        }
     }
 
-    // 1. Update Airfield Details
-    document.getElementById('outAirfield').innerText = airfield.name + " (" + cleanKey + ")";
-    document.getElementById('outRunways').innerText = airfield.runways.join(" / ");
+    // Load State from persistent LocalStorage
+    function initApplicationState() {
+        if(localStorage.getItem('gyro_coupled_fleet_profiles')) {
+            appState.profiles = JSON.parse(localStorage.getItem('gyro_coupled_fleet_profiles'));
+        }
+        if(localStorage.getItem('gyro_active_reg_id')) {
+            appState.activeReg = localStorage.getItem('gyro_active_reg_id');
+        }
 
-    // 2. Fetch Environmental Factors (Weather)
-    const weather = fetchMockWeather(cleanKey);
-    document.getElementById('outWind').innerText = weather.text;
-
-    // 3. Re-calculate active performance numbers/runways dynamically
-    const bestRunway = calculateBestRunway(airfield.runways, weather.heading);
-    document.getElementById('outBestRunway').innerText = "Runway " + bestRunway;
-}
-
-// Search Handler
-function searchAirfield() {
-    const query = document.getElementById('airfieldSearch').value.trim();
-    if (!query) {
-        alert("Please enter a search term.");
-        return;
-    }
-    updateCalculatorUI(query);
-}
-
-// Home Button Handler
-function loadHomeAirfield() {
-    const saved = localStorage.getItem('aircraftConfig');
-    if (!saved) {
-        alert("No configuration profile found. Please set your home airfield above and save it first.");
-        return;
-    }
-    
-    const config = JSON.parse(saved);
-    if (!config.homeAirfield) {
-        alert("No home airfield has been saved inside your aircraft configuration profile yet.");
-        return;
+        rebuildProfileDropdown();
+        loadHomeAirfield(true);
     }
 
-    // Set search box value to match home setting visually and run calculation pipeline
-    document.getElementById('airfieldSearch').value = config.homeAirfield;
-    updateCalculatorUI(config.homeAirfield);
-}
+    function rebuildProfileDropdown() {
+        profileSelect.innerHTML = '';
+        appState.profiles.forEach(p => {
+            let opt = document.createElement('option');
+            opt.value = p.reg;
+            opt.textContent = `${p.reg} (Home Base: ${p.homeAirfield.name})`;
+            profileSelect.appendChild(opt);
+        });
+        profileSelect.value = appState.activeReg;
+    }
 
-// Run startup check
-window.onload = loadSavedConfigOnStartup;
+    function handleProfileChange() {
+        appState.activeReg = profileSelect.value;
+        localStorage.setItem('gyro_active_reg_id', appState.activeReg);
+        loadHomeAirfield(false);
+    }
+
+    // Home Button Handler
+    function loadHomeAirfield(isSilentInit = false) {
+        const activeProfile = appState.profiles.find(p => p.reg === appState.activeReg);
+        if(!activeProfile || !activeProfile.homeAirfield) return;
+
+        const home = activeProfile.homeAirfield;
+        airfieldInput.value = home.name.toUpperCase();
+        
+        if(isSilentInit) {
+            matrixOutput.innerHTML = `Loaded Profile: <span class="highlight">${activeProfile.reg}</span>\nCoupled Home Base: <span class="highlight">${home.name}</span>\n\nClick Search to fetch live atmospheric metrics.`;
+        } else {
+            processAirfieldDataPipeline(home);
+        }
+    }
+
+    // Search Execution Function
+    function performSearch() {
+        const query = airfieldInput.value.trim().toUpperCase();
+        if (!query) {
+            matrixOutput.textContent = "Error: Please enter an airfield target string.";
+            return;
+        }
+
+        // 1. Check if query matches active profile's tied home base parameters
+        const activeProfile = appState.profiles.find(p => p.reg === appState.activeReg);
+        if(activeProfile && activeProfile.homeAirfield && query === activeProfile.homeAirfield.name.toUpperCase()) {
+            processAirfieldDataPipeline(activeProfile.homeAirfield);
+            return;
+        }
+
+        // 2. Scan the local database array
+        const matched = localAirfieldDatabase.find(item => 
+            item.id === query || item.name === query
+        );
+
+        if(matched) {
+            processAirfieldDataPipeline(matched);
+        } else {
+            matrixOutput.innerHTML = `<span class="alert-text">Error: "${query}" not found in local airfield database.</span>\nReverting to home profile settings.`;
+            setTimeout(() => { loadHomeAirfield(true); }, 2500);
+        }
+    }
+
+    // Data execution pipeline: Fetches weather metadata and matches runways
+    function processAirfieldDataPipeline(airfieldObj) {
+        matrixOutput.innerHTML = `Querying data metrics for [${airfieldObj.name}]...\nConnecting to OpenMETEO weather matrix link...`;
+        
+        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${airfieldObj.lat}&longitude=${airfieldObj.lon}&current=temperature_2m,wind_speed_10m,wind_direction_10m&wind_speed_unit=kn`;
+
+        fetch(weatherUrl)
+            .then(res => {
+                if(!res.ok) throw new Error("Network metadata link dropped.");
+                return res.json();
+            })
+            .then(data => {
+                const temp = Math.round(data.current.temperature_2m);
+                const wDir = data.current.wind_direction_10m;
+                const wSpeed = Math.round(data.current.wind_speed_10m);
+
+                // Math Calculation Matrix: Track the optimal heading choice to maximize headwind components
+                let bestHdg = airfieldObj.headings[0];
+                let maxHeadwind = -999;
+
+                airfieldObj.headings.forEach(hdg => {
+                    const angleRad = ((wDir - hdg) * Math.PI) / 180;
+                    const headwindComponent = wSpeed * Math.cos(angleRad);
+                    if(headwindComponent > maxHeadwind) {
+                        maxHeadwind = headwindComponent;
+                        bestHdg = hdg;
+                    }
+                });
+
+                const rwyLabel = String(Math.round(bestHdg / 10)).padStart(2, '0');
+                const densityAlt = Math.max(0, 120 * (temp - 15)); // Standard Atmosphere deviation estimation
+
+                matrixOutput.innerHTML = `
+AIRCRAFT CONTEXT  : <span class="highlight">${appState.activeReg}</span>
+AIRFIELD IDENTIFIED: <span class="highlight">${airfieldObj.name}</span>
+RUNWAY TOTAL LENGTH: ${airfieldObj.rwyLen} meters
+
+[METEOROLOGICAL MATRIX DATA]
+- Ambient Temperature : ${temp} °C
+- Calculated Density Alt : ${densityAlt} ft
+- Computed Wind Metric : ${String(wDir).padStart(3, '0')}° at ${wSpeed} KT
+
+[CALCULATED PRE-FLIGHT EVALUATION]
+- Optimal Runway Heading: <span class="highlight">RWY ${rwyLabel}</span> (Preferred Heading Vector: ${bestHdg}°)
+- Est. Headwind Benefit : ${Math.max(0, Math.round(maxHeadwind))} KT
+                `.trim();
+            })
+            .catch(err => {
+                matrixOutput.innerHTML = `<span class="alert-text">Execution Error: Unable to fetch live metrics (${err.message})</span>`;
+            });
+    }
+
+    // Save Configuration Function
+    function saveProfile(e) {
+        e.preventDefault();
+        const reg = document.getElementById('cfgReg').value.toUpperCase().trim();
+        const emptyWeight = parseFloat(document.getElementById('cfgEmpty').value);
+        const name = document.getElementById('cfgHomeName').value.trim();
+        const lat = parseFloat(document.getElementById('cfgHomeLat').value);
+        const lon = parseFloat(document.getElementById('cfgHomeLon').value);
+        const rwyLen = parseInt(document.getElementById('cfgHomeLen').value);
+        const headings = document.getElementById('cfgHomeHdgs').value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+
+        const newProfile = {
+            reg,
+            emptyWeight,
+            homeAirfield: { name, lat, lon, rwyLen, headings }
+        };
+
+        const existingIndex = appState.profiles.findIndex(p => p.reg === reg);
+        if(existingIndex > -1) {
+            appState.profiles[existingIndex] = newProfile;
+        } else {
+            appState.profiles.push(newProfile);
+        }
+
+        appState.activeReg = reg;
+        localStorage.setItem('gyro_coupled_fleet_profiles', JSON.stringify(appState.profiles));
+        localStorage.setItem('gyro_active_reg_id', reg);
+
+        rebuildProfileDropdown();
+        loadHomeAirfield(false);
+        switchTab('calc');
+    }
+
+    // Event Listeners
+    homeBtn.addEventListener('click', () => loadHomeAirfield(false));
+    searchBtn.addEventListener('click', performSearch);
+    airfieldInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
+
+    // Initialize application runtime state on baseline document mount load
+    window.addEventListener('DOMContentLoaded', initApplicationState);
 </script>
 
 </body>
