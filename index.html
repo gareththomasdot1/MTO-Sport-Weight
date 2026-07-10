@@ -50,11 +50,11 @@
         .app-title { font-weight: bold; color: #fff; font-size: 0.9rem; letter-spacing: 0.5px; display: flex; align-items: center; gap: 10px; }
         .header-right { display: flex; align-items: center; gap: 15px; }
 
-        #btn-config {
+        .icon-btn {
             background: transparent; border: none; color: #666; cursor: pointer; font-size: 1.2rem;
-            transition: color 0.3s; padding: 0 5px;
+            transition: color 0.3s; padding: 0 5px; font-weight: bold;
         }
-        #btn-config:hover { color: var(--airbus-cyan); }
+        .icon-btn:hover { color: var(--airbus-cyan); }
 
         /* Sidebar Settings Pane */
         .sidebar {
@@ -82,8 +82,8 @@
         .slider-container { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
         .slider-container input[type="range"] { flex: 1; }
         .slider-container input[type="number"] { width: 80px; text-align: center; }
-
-        .range-val { float: right; color: var(--airbus-cyan); font-weight: bold; font-size: 0.9rem; }
+        
+        .split-inputs { display: flex; gap: 10px; }
 
         .btn-save { 
             width: 100%; padding: 12px; background: var(--btn-active); color: var(--airbus-cyan); 
@@ -91,6 +91,21 @@
             transition: background 0.2s; font-size: 0.9rem; border-radius: 4px;
         }
         .btn-save:hover { background: #445; }
+
+        /* Help Modal */
+        .modal {
+            display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.8); justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;
+        }
+        .modal-content {
+            background-color: var(--sidebar-bg); border: 1px solid var(--airbus-cyan);
+            padding: 25px; border-radius: 5px; max-width: 600px; width: 100%; color: #ccc; position: relative;
+            line-height: 1.5; box-shadow: 0 0 20px rgba(0,242,255,0.2);
+        }
+        .modal-content h2 { color: var(--airbus-cyan); margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .modal-content ul { margin-top: 10px; margin-bottom: 20px; padding-left: 20px; }
+        .close-modal { position: absolute; right: 20px; top: 15px; color: #888; font-size: 28px; cursor: pointer; font-weight: bold; }
+        .close-modal:hover { color: #fff; }
 
         /* Main Workspace Panels */
         .main-view { 
@@ -171,6 +186,25 @@
     <p>Please use landscape mode<br>for optimal viewing.</p>
 </div>
 
+<div id="helpModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeHelp()">&times;</span>
+        <h2>System Information & Help</h2>
+        <p><strong>Purpose:</strong> This Flight Performance Management System is designed to calculate aircraft weight, balance limits, and estimate runway requirements based on real-time environmental factors.</p>
+        <p><strong>Data Retrieval:</strong></p>
+        <ul>
+            <li>Weather data (wind, temperature, QNH) is downloaded live from the <strong>Open-Meteo API</strong> based on the selected airfield's coordinates.</li>
+            <li>Airfield data is retrieved from a local system database.</li>
+        </ul>
+        <p><strong>Limitations & Safety Warning:</strong></p>
+        <p style="color: var(--airbus-red); font-weight: bold; border: 1px solid var(--airbus-red); padding: 10px; background: rgba(255,51,51,0.1);">
+            NOT FOR REAL NAVIGATION OR FLIGHT SAFETY PURPOSES.<br><br>
+            Takeoff distances and the resulting safety matrix are estimates based on standard light sport aircraft models. Environmental calculations are simplified approximations. Always refer to your official Pilot's Operating Handbook (POH) for actual flight planning.
+        </p>
+        <p style="text-align: right; font-size: 0.8rem; color: #666; margin-bottom: 0;">System Version: 4.0</p>
+    </div>
+</div>
+
 <div id="mySidebar" class="sidebar">
     <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
     <div class="sidebar-content">
@@ -196,15 +230,32 @@
             <input type="number" id="maxWeight" value="450" onchange="calculateFlightSafety()">
         </div>
 
+        <div class="form-group">
+            <span class="form-label">Pilot Weight Limits (Min / Max)</span>
+            <div class="split-inputs">
+                <input type="number" id="pilotMin" value="0" placeholder="Min">
+                <input type="number" id="pilotMax" value="150" placeholder="Max">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <span class="form-label">Passenger Weight Limits (Min / Max)</span>
+            <div class="split-inputs">
+                <input type="number" id="passengerMin" value="0" placeholder="Min">
+                <input type="number" id="passengerMax" value="150" placeholder="Max">
+            </div>
+        </div>
+
         <button id="btn-save" class="btn-save" onclick="saveConfiguration()">SAVE & APPLY</button>
     </div>
 </div>
 
 <div id="main" class="dashboard">
     <header>
-        <div class="app-title">FLIGHT PERFORMANCE MANAGEMENT SYSTEM <span id="header-status"></span></div>
+        <div class="app-title">FLIGHT PERFORMANCE MANAGEMENT SYSTEM v4.0 <span id="header-status"></span></div>
         <div class="header-right">
-            <button id="btn-config" onclick="openNav()">&#9881;</button>
+            <button class="icon-btn" onclick="openHelp()">&#63;</button>
+            <button class="icon-btn" onclick="openNav()">&#9881;</button>
         </div>
     </header>
 
@@ -213,7 +264,7 @@
             <div class="label">LOADING PARAMETERS</div>
             <div class="calc-content">
                 <div class="form-group" style="margin-top: 10px;">
-                    <span class="form-label">Pilot Weight <span id="val-pilot" class="range-val">90 kg</span></span>
+                    <span class="form-label">Pilot Weight</span>
                     <div class="slider-container">
                         <input type="range" id="pilotSlider" min="0" max="150" value="90" oninput="syncWeight('pilot', this.value)">
                         <input type="number" id="pilotWeight" min="0" max="150" value="90" oninput="syncWeight('pilot', this.value)">
@@ -221,7 +272,7 @@
                 </div>
 
                 <div class="form-group">
-                    <span class="form-label">Passenger Weight <span id="val-passenger" class="range-val">0 kg</span></span>
+                    <span class="form-label">Passenger Weight</span>
                     <div class="slider-container">
                         <input type="range" id="passengerSlider" min="0" max="150" value="0" oninput="syncWeight('passenger', this.value)">
                         <input type="number" id="passengerWeight" min="0" max="150" value="0" oninput="syncWeight('passenger', this.value)">
@@ -229,7 +280,7 @@
                 </div>
 
                 <div class="form-group">
-                    <span class="form-label">Baggage Weight <span id="val-baggage" class="range-val">0 kg</span></span>
+                    <span class="form-label">Baggage Weight</span>
                     <div class="slider-container">
                         <input type="range" id="baggageSlider" min="0" max="50" value="0" oninput="syncWeight('baggage', this.value)">
                         <input type="number" id="baggageWeight" min="0" max="50" value="0" oninput="syncWeight('baggage', this.value)">
@@ -237,14 +288,14 @@
                 </div>
 
                 <div class="form-group">
-                    <span class="form-label">Fuel Load <span id="val-fuel" class="range-val">40 L</span></span>
+                    <span class="form-label">Fuel Load</span>
                     <div class="slider-container">
                         <input type="range" id="fuelSlider" min="0" max="100" value="40" oninput="syncWeight('fuel', this.value)">
                         <input type="number" id="fuelLoad" min="0" max="100" value="40" oninput="syncWeight('fuel', this.value)">
                     </div>
                 </div>
 
-                <button class="btn-action" onclick="calculateFlightSafety()">FORCE RE-COMPUTE</button>
+                <button class="btn-action" onclick="calculateFlightSafety()">DOWNLOAD WEATHER & RECOMPUTE</button>
             </div>
         </div>
 
@@ -253,8 +304,8 @@
             <table>
                 <thead>
                     <tr>
-                     //   <th>PARAMETER</th>
-                     //   <th>VALUE</th>
+                        <th>PARAMETER</th>
+                        <th>VALUE</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -344,25 +395,41 @@ let lastCoords = "";
 function openNav() { document.getElementById("mySidebar").style.width = "350px"; }
 function closeNav() { document.getElementById("mySidebar").style.width = "0"; }
 
+function openHelp() { document.getElementById("helpModal").style.display = "flex"; }
+function closeHelp() { document.getElementById("helpModal").style.display = "none"; }
+
+function applySliderBoundaries(config) {
+    const pilotMin = config.pilotMin !== undefined ? config.pilotMin : 0;
+    const pilotMax = config.pilotMax !== undefined ? config.pilotMax : 150;
+    const passengerMin = config.passengerMin !== undefined ? config.passengerMin : 0;
+    const passengerMax = config.passengerMax !== undefined ? config.passengerMax : 150;
+
+    document.getElementById('pilotSlider').min = pilotMin;
+    document.getElementById('pilotSlider').max = pilotMax;
+    document.getElementById('pilotWeight').min = pilotMin;
+    document.getElementById('pilotWeight').max = pilotMax;
+
+    document.getElementById('passengerSlider').min = passengerMin;
+    document.getElementById('passengerSlider').max = passengerMax;
+    document.getElementById('passengerWeight').min = passengerMin;
+    document.getElementById('passengerWeight').max = passengerMax;
+}
+
 function syncWeight(type, value) {
     let numVal = parseInt(value) || 0;
     
     if (type === 'pilot') {
         document.getElementById('pilotSlider').value = numVal;
         document.getElementById('pilotWeight').value = numVal;
-        document.getElementById('val-pilot').innerText = numVal + " kg";
     } else if (type === 'passenger') {
         document.getElementById('passengerSlider').value = numVal;
         document.getElementById('passengerWeight').value = numVal;
-        document.getElementById('val-passenger').innerText = numVal + " kg";
     } else if (type === 'baggage') {
         document.getElementById('baggageSlider').value = numVal;
         document.getElementById('baggageWeight').value = numVal;
-        document.getElementById('val-baggage').innerText = numVal + " kg";
     } else if (type === 'fuel') {
         document.getElementById('fuelSlider').value = numVal;
         document.getElementById('fuelLoad').value = numVal;
-        document.getElementById('val-fuel').innerText = numVal + " L";
     }
     
     // Automatically recalculate on slider adjustment
@@ -420,19 +487,29 @@ function saveConfiguration() {
         registration: document.getElementById('aircraftReg').value.toUpperCase(),
         homeAirfield: document.getElementById('homeAirfield').value.trim().toUpperCase(),
         emptyWeight: document.getElementById('emptyWeight').value,
-        maxWeight: document.getElementById('maxWeight').value
+        maxWeight: document.getElementById('maxWeight').value,
+        pilotMin: document.getElementById('pilotMin').value || 0,
+        pilotMax: document.getElementById('pilotMax').value || 150,
+        passengerMin: document.getElementById('passengerMin').value || 0,
+        passengerMax: document.getElementById('passengerMax').value || 150
     };
     
     localStorage.setItem('aircraftConfig', JSON.stringify(config));
     
     const btn = document.getElementById("btn-save");
     btn.innerText = "SETTINGS SAVED!";
+    
+    applySliderBoundaries(config);
+    
     setTimeout(() => { 
         btn.innerText = "SAVE & APPLY"; 
         closeNav(); 
     }, 800);
     
     document.getElementById('outReg').innerText = config.registration;
+    
+    // Clear weather cache when saving config so the manual button can force a fresh download
+    cachedWeather = null;
     calculateFlightSafety();
 }
 
@@ -444,16 +521,31 @@ function loadSavedConfigOnStartup() {
         document.getElementById('homeAirfield').value = config.homeAirfield || "EGXU";
         document.getElementById('emptyWeight').value = config.emptyWeight || "275";
         document.getElementById('maxWeight').value = config.maxWeight || "450";
+        document.getElementById('pilotMin').value = config.pilotMin !== undefined ? config.pilotMin : "0";
+        document.getElementById('pilotMax').value = config.pilotMax !== undefined ? config.pilotMax : "150";
+        document.getElementById('passengerMin').value = config.passengerMin !== undefined ? config.passengerMin : "0";
+        document.getElementById('passengerMax').value = config.passengerMax !== undefined ? config.passengerMax : "150";
+        
         document.getElementById('outReg').innerText = config.registration || "G-IROI";
+        applySliderBoundaries(config);
     } else {
         document.getElementById('outReg').innerText = "G-IROI";
     }
+    
     syncWeight('pilot', document.getElementById('pilotWeight').value);
     syncWeight('passenger', document.getElementById('passengerWeight').value);
     syncWeight('baggage', document.getElementById('baggageWeight').value);
     syncWeight('fuel', document.getElementById('fuelLoad').value);
     
     calculateFlightSafety();
+}
+
+// Ensure clicking outside the modal closes it
+window.onclick = function(event) {
+    const modal = document.getElementById("helpModal");
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
 }
 
 // Adjusted to handle async data fetching and incorporate environmental factors into performance
@@ -584,6 +676,11 @@ async function calculateFlightSafety() {
     statusElement.innerHTML = finalStatusHtml;
     titleStatusElement.innerHTML = "- " + finalStatusHtml;
 }
+
+// Allow the "DOWNLOAD WEATHER" button to force bypass the cache
+document.querySelector('.btn-action').addEventListener('click', () => {
+    cachedWeather = null;
+});
 
 window.onload = loadSavedConfigOnStartup;
 </script>
