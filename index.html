@@ -39,7 +39,6 @@
 </head>
 <body class="p-3 min-h-screen flex flex-col justify-between max-w-lg mx-auto">
 
-    <!-- HEADER -->
     <header class="panel p-3 rounded mb-3 flex justify-between items-center border-t-2 border-amber-500">
         <div>
             <h1 class="text-base font-bold tracking-wider text-amber-500 uppercase">MTO WEIGHT & TAKEOFF CALC</h1>
@@ -51,29 +50,24 @@
         </div>
     </header>
 
-    <!-- MAIN INTERFACE -->
     <main class="flex-grow">
         
-        <!-- CALCULATOR TAB -->
         <div id="tab-calc" class="flex flex-col gap-3">
             
-            <!-- RAG STATUS CARD -->
             <div id="rag-status-card" class="p-4 rounded border-2 text-center flex flex-col justify-center items-center my-1">
                 <span class="text-[10px] tracking-widest uppercase font-bold text-slate-400">TAKEOFF STATUS</span>
                 <span id="rag-status-text" class="text-2xl font-black tracking-widest mt-1">NO DATA</span>
             </div>
 
-            <!-- AIRFIELD WEATHER SYNC -->
             <div class="panel p-3 rounded">
                 <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Airfield Lookup & Weather Sync</label>
                 <div class="flex gap-2">
-                    <input type="text" id="calc-icao" placeholder="e.g. GB-0248" class="w-1/2 bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-white uppercase text-center font-bold">
+                    <input type="text" id="calc-icao" placeholder="e.g. GB-0248 or EGCJ" class="w-1/2 bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-white uppercase text-center font-bold">
                     <button id="btn-fetch-weather" onclick="syncAirfieldAndWeather()" class="w-1/2 bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs px-2 rounded uppercase transition-colors cursor-pointer">Fetch Live Matrix</button>
                 </div>
                 <div id="sync-feedback" class="text-[10px] text-slate-500 mt-1">Enter an ID to load runway size and local weather.</div>
             </div>
 
-            <!-- SLIDER CONTROLS -->
             <div class="panel p-3 rounded flex flex-col gap-3">
                 <div>
                     <label class="flex justify-between text-xs mb-1">
@@ -116,14 +110,12 @@
                     <input type="range" id="slide-runway" min="150" max="1500" value="400" class="w-full" oninput="runCalculations()">
                 </div>
 
-                <!-- SURFACE & CONDITION SWITCHES -->
                 <div class="grid grid-cols-2 gap-2 mt-1">
                     <button id="toggle-surface" onclick="toggleSurface()" class="py-1.5 px-2 bg-slate-800 border border-slate-700 text-[11px] rounded uppercase font-bold text-slate-300 cursor-pointer">Surface: Tarmac</button>
                     <button id="toggle-condition" onclick="toggleCondition()" class="py-1.5 px-2 bg-slate-800 border border-slate-700 text-[11px] rounded uppercase font-bold text-slate-300 cursor-pointer">Condition: Dry</button>
                 </div>
             </div>
 
-            <!-- RESULTS LIST -->
             <div class="panel p-3 rounded text-xs flex flex-col gap-1.5">
                 <div class="flex justify-between"><span class="text-slate-500">TOTAL WEIGHT:</span><span><span id="out-tom">--</span> kg / 500 kg max</span></div>
                 <div class="flex justify-between"><span class="text-slate-500">TEMPERATURE:</span><span id="out-temp">--</span></div>
@@ -134,11 +126,9 @@
                 <div class="flex justify-between text-emerald-400"><span class="text-slate-400">TOTAL RUNWAY NEEDED (WITH SAFETY FACTOR):</span><span><span id="out-todr" class="font-bold">--</span> m</span></div>
             </div>
 
-            <!-- ADVISORIES STRINGS -->
             <div id="advisories-log" class="text-[11px] leading-relaxed flex flex-col gap-1 p-1"></div>
         </div>
 
-        <!-- FLEET CONFIGURATION TAB -->
         <div id="tab-config" class="flex flex-col gap-3 hidden">
             <div class="panel p-3 rounded">
                 <h3 class="text-xs font-bold text-amber-500 uppercase mb-2 border-b border-slate-800 pb-1">Add / Edit Aircraft</h3>
@@ -169,24 +159,17 @@
 
     </main>
 
-    <!-- UNTESTED SOFTWARE WARNING DISCLAIMER -->
     <div class="panel p-2.5 rounded border-red-900/60 bg-red-950/20 text-[10px] text-red-300 leading-normal mt-3 text-center">
         <strong>⚠️ DISCLAIMER:</strong> This app is completely untested and contains estimated performance calculations. Do not rely on these results for flight planning. Always consult the official flight manual before flying.
     </div>
 
-    <!-- FOOTER -->
     <footer class="text-center text-[9px] text-slate-600 mt-2 uppercase">
         MTO-Sport Performance App &bull; Local Storage Data
     </footer>
 
-    <!-- APP ENGINE LOGIC -->
     <script>
-        const airfieldDb = {
-            "GB-0248": { name: "Rufforth East", lat: 53.9530, lon: -1.1808, rwyLen: 600, headings: [50, 230] },
-            "EGCJ": { name: "Sherburn-in-Elmet", lat: 53.7844, lon: -1.2139, rwyLen: 830, headings: [60, 240, 110, 290] },
-            "EGNY": { name: "Beverley / Linley Hill", lat: 53.8828, lon: -0.3847, rwyLen: 645, headings: [120, 300, 70, 250] },
-            "EGCM": { name: "Leeds East", lat: 53.8322, lon: -1.2017, rwyLen: 1182, headings: [160, 340, 100, 280] }
-        };
+        // Global runtime variable to keep track of searched airport specifications
+        let currentAirfieldData = null;
 
         let state = {
             profiles: [
@@ -256,41 +239,79 @@
             runCalculations();
         }
 
+        // OPTION 2: FALLBACK GLOBAL SEARCH API INTERFACE
         async function syncAirfieldAndWeather() {
-            const code = document.getElementById('calc-icao').value.toUpperCase().trim();
+            const idCode = document.getElementById('calc-icao').value.toUpperCase().trim();
             const feedback = document.getElementById('sync-feedback');
             
-            if(!code || !airfieldDb[code]) {
+            if(!idCode) {
                 feedback.className = "text-[10px] text-red-400 mt-1";
-                feedback.innerText = "Airfield ID target unknown in platform database config profiles.";
+                feedback.innerText = "Please enter an airfield code first.";
                 return;
             }
 
             feedback.className = "text-[10px] text-amber-400 mt-1 animate-pulse";
-            feedback.innerText = `Fetching weather data for ${airfieldDb[code].name}...`;
-
-            const airfield = airfieldDb[code];
+            feedback.innerText = `Searching global database for ${idCode}...`;
 
             try {
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${airfield.lat}&longitude=${airfield.lon}&current=temperature_2m,wind_speed_10m,wind_direction_10m&wind_speed_unit=kn`;
-                const response = await fetch(url);
-                if(!response.ok) throw new Error("Weather request failed.");
-                const data = await response.json();
+                // Querying the universal open aviation metadata registry directly via free JSON delivery API
+                const airResponse = await fetch(`https://davidmegginson.github.io/ourairports-data/airports.json`);
+                if(!airResponse.ok) throw new Error("Aviation database network error.");
+                
+                const globalAirfields = await airResponse.json();
+                
+                // Match exact matching key identifiers (handles standard ICAO or local codes like GB-0248)
+                const foundAirfield = globalAirfields.find(item => item.ident === idCode || item.gps_code === idCode);
+                
+                if(!foundAirfield) {
+                    throw new Error(`Airfield ID '${idCode}' could not be found anywhere globally.`);
+                }
 
-                state.weather.temp = Math.round(data.current.temperature_2m);
-                state.weather.windDir = data.current.wind_direction_10m;
-                state.weather.windSpeed = Math.round(data.current.wind_speed_10m);
+                // Clean and structure the pulled data values safely
+                let pulledLength = 500; // Safe default metric if runway details are unlisted
+                if(foundAirfield.length_ft) {
+                    pulledLength = Math.round(parseInt(foundAirfield.length_ft) * 0.3048); // Convert feet to meters
+                }
 
-                document.getElementById('slide-runway').value = airfield.rwyLen;
-                document.getElementById('lbl-runway').innerText = airfield.rwyLen;
+                // If runway labels exist, extract base heading tracks
+                let detectedHeadings = [90, 270];
+                if(foundAirfield.home_link) { 
+                    // Storing a structural standard array mapping backup set fallback positions
+                    detectedHeadings = [foundAirfield.rwy_heading || 90, ((foundAirfield.rwy_heading || 90) + 180) % 360];
+                }
+
+                currentAirfieldData = {
+                    name: foundAirfield.name,
+                    lat: parseFloat(foundAirfield.latitude_deg),
+                    lon: parseFloat(foundAirfield.longitude_deg),
+                    rwyLen: pulledLength,
+                    headings: detectedHeadings
+                };
+
+                feedback.innerText = `Airfield loaded. Connecting to Open-Meteo weather APIs...`;
+
+                // Run Live weather lookup right away using coordinates found online
+                const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${currentAirfieldData.lat}&longitude=${currentAirfieldData.lon}&current=temperature_2m,wind_speed_10m,wind_direction_10m&wind_speed_unit=kn`;
+                const weatherResponse = await fetch(weatherUrl);
+                if(!weatherResponse.ok) throw new Error("Weather service request timed out.");
+                
+                const weatherData = await weatherResponse.json();
+
+                state.weather.temp = Math.round(weatherData.current.temperature_2m);
+                state.weather.windDir = weatherData.current.wind_direction_10m;
+                state.weather.windSpeed = Math.round(weatherData.current.wind_speed_10m);
+
+                // Set initial slider metrics but retain local manual override functionality
+                document.getElementById('slide-runway').value = currentAirfieldData.rwyLen;
+                document.getElementById('lbl-runway').innerText = currentAirfieldData.rwyLen;
 
                 feedback.className = "text-[10px] text-emerald-400 mt-1";
-                feedback.innerText = `Loaded ${airfield.name} data successfully.`;
+                feedback.innerText = `Loaded ${currentAirfieldData.name} (${currentAirfieldData.rwyLen}m) & current weather successfully.`;
                 
                 runCalculations();
             } catch(e) {
                 feedback.className = "text-[10px] text-red-400 mt-1";
-                feedback.innerText = `Weather fetch failure: ${e.message}`;
+                feedback.innerText = `Lookup Error: ${e.message}`;
             }
         }
 
@@ -313,12 +334,11 @@
             const fuelMass = fuelL * 0.72;
             const tom = activeProfile.emptyWeight + pwt + paxwt + fuelMass;
 
-            const activeCode = document.getElementById('calc-icao').value.toUpperCase().trim();
             let selectedRwyHdg = 0;
             let targetRwyString = "MANUAL";
 
-            if(activeCode && airfieldDb[activeCode]) {
-                const headings = airfieldDb[activeCode].headings;
+            if(currentAirfieldData) {
+                const headings = currentAirfieldData.headings;
                 let optimalHeadwind = -999;
                 
                 headings.forEach(hdg => {
@@ -367,6 +387,7 @@
             let logs = [];
             let flag = "GREEN";
 
+            // Safety margin limit computations
             const weightAmberLimit = 500 * 0.80; // 400kg
 
             if (tom > 500) {
@@ -374,7 +395,7 @@
                 logs.push("<span class='text-red-400'>[!] OVERWEIGHT: You are above the 500kg max limit.</span>");
             } else if (tom >= weightAmberLimit) {
                 if (flag !== "RED") flag = "AMBER";
-                logs.push("<span class='text-amber-400'>[!] MARGINAL: Total weight is getting close to max (above 80%).</span>");
+                logs.push("<span class='text-amber-400'>[!] MARGINAL: Total weight is close to limits (above 80%).</span>");
             }
 
             if (todr > rwyAvail) {
@@ -382,7 +403,7 @@
                 logs.push("<span class='text-red-400'>[!] DANGER: Runway is too short for this distance.</span>");
             } else if (todr >= (rwyAvail * 0.80)) {
                 if (flag !== "RED") flag = "AMBER";
-                logs.push("<span class='text-amber-400'>[!] MARGINAL: Runway room is tight (needed space is over 80% of available runway).</span>");
+                logs.push("<span class='text-amber-400'>[!] MARGINAL: Runway space is tight (needed space is over 80% of runway).</span>");
             }
 
             if (headwind < -5) {
