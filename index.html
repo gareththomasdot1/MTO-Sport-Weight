@@ -1,164 +1,189 @@
-<!-- 
-========================================================================
-PROJECT: Gyroplane Performance & Weather Matrix PWA
-VERSION: 0.1
-LAST UPDATED: 2026-07-10
-========================================================================
--->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aviation Performance & Weather Matrix</title>
+    <title>Aircraft Performance & Airfield Calculator</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #121212;
-            color: #e0e0e0;
-            padding: 20px;
-            margin: 0;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: #1e1e1e;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
-        h1 {
-            font-size: 1.5rem;
-            margin-top: 0;
-            color: #fff;
-            border-bottom: 1px solid #333;
-            padding-bottom: 10px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-            color: #aaa;
-        }
-        .input-row {
-            display: flex;
-            gap: 10px;
-        }
-        input[type="text"] {
-            flex: 1;
-            padding: 10px;
-            background: #2a2a2a;
-            border: 1px solid #444;
-            border-radius: 4px;
-            color: #fff;
-            font-size: 1rem;
-            text-transform: uppercase;
-        }
-        input[type="text"]:focus {
-            border-color: #007acc;
-            outline: none;
-        }
-        button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            font-size: 1rem;
-            cursor: pointer;
-            font-weight: 500;
-            transition: background 0.2s;
-        }
-        .btn-primary {
-            background-color: #007acc;
-            color: #fff;
-        }
-        .btn-primary:hover {
-            background-color: #0062a3;
-        }
-        .btn-secondary {
-            background-color: #3a3a3a;
-            color: #e0e0e0;
-        }
-        .btn-secondary:hover {
-            background-color: #4a4a4a;
-        }
-        .output-box {
-            margin-top: 20px;
-            background: #151515;
-            border: 1px solid #333;
-            border-radius: 4px;
-            padding: 15px;
-            min-height: 100px;
-            white-space: pre-wrap;
-            font-family: monospace;
-            color: #a6e22e;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 20px; background: #f5f5f5; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .section { margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input[type="text"] { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+        button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .results-box { background: #e9ecef; padding: 15px; border-radius: 4px; margin-top: 15px; }
+        .status { font-style: italic; color: #666; margin-top: 5px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Airfield Performance Lookup</h1>
-    
-    <div class="form-group">
-        <label for="airfieldInput">Airfield ICAO / Name</label>
-        <div class="input-row">
-            <input type="text" id="airfieldInput" placeholder="e.g. EGXU" autocomplete="off">
-            <button type="button" class="btn-secondary" id="homeBtn">Home Airfield</button>
-            <button type="button" class="btn-primary" id="searchBtn">Search</button>
+    <h2>Aircraft & Airfield Configuration</h2>
+
+    <!-- SECTION 1: Aircraft & Home Airfield Configuration -->
+    <div class="section">
+        <h3>1. Aircraft Configuration (Saved Settings)</h3>
+        <div class="form-group">
+            <label for="aircraftReg">Aircraft Registration</label>
+            <input type="text" id="aircraftReg" value="G-IROI">
+        </div>
+        <div class="form-group">
+            <label for="homeAirfield">Saved Home Airfield (ICAO/Name)</label>
+            <input type="text" id="homeAirfield" placeholder="e.g., EGBX or Rufforth East">
+        </div>
+        <button class="btn-success" onclick="saveConfiguration()">Save Configuration</button>
+        <div id="configStatus" class="status"></div>
+    </div>
+
+    <!-- SECTION 2: Calculator App Interface -->
+    <div class="section">
+        <h3>2. Performance Calculator</h3>
+        <div class="form-group">
+            <label for="airfieldSearch">Search Airfield Database</label>
+            <input type="text" id="airfieldSearch" placeholder="Enter airfield name or ICAO code...">
+        </div>
+        <div class="btn-group">
+            <button class="btn-primary" onclick="searchAirfield()">Search Airfield</button>
+            <button class="btn-secondary" onclick="loadHomeAirfield()">🏠 Use Home Airfield</button>
         </div>
     </div>
 
-    <div class="output-box" id="matrixOutput">Results will appear here...</div>
+    <!-- SECTION 3: Dynamic Outputs -->
+    <div class="section">
+        <h3>Current Airfield Environment & Performance</h3>
+        <div class="results-box">
+            <p><strong>Selected Airfield:</strong> <span id="outAirfield">None</span></p>
+            <p><strong>Runways Available:</strong> <span id="outRunways">--</span></p>
+            <p><strong>Current Wind (METAR):</strong> <span id="outWind">--</span></p>
+            <p><strong>Calculated Best Runway:</strong> <span id="outBestRunway" style="color: #007bff; font-weight: bold;">--</span></p>
+        </div>
+    </div>
 </div>
 
 <script>
-    // Configuration Constants
-    const HOME_AIRFIELD = "Rufforth East"; // Primary flying location home config
+// Mock Local Database of Airfields
+const airfieldDatabase = {
+    "EGXU": { name: "Rufforth East", runways: ["05", "23"], lat: 53.95, lon: -1.18 },
+    "RUFFORTH EAST": { name: "Rufforth East", runways: ["05", "23"], lat: 53.95, lon: -1.18 },
+    "EGBX": { name: "Woburn Park", runways: ["12", "30"], lat: 51.98, lon: -0.59 },
+    "EGCA": { name: "Caernarfon", runways: ["07", "25", "02", "20"], lat: 53.10, lon: -4.33 }
+};
 
-    // DOM Elements
-    const airfieldInput = document.getElementById('airfieldInput');
-    const homeBtn = document.getElementById('homeBtn');
-    const searchBtn = document.getElementById('searchBtn');
-    const matrixOutput = document.getElementById('matrixOutput');
+// Mock Weather API Selector
+function fetchMockWeather(icao) {
+    // In a real app, this would be an fetch() call to an aviation weather API
+    const variations = [
+        { text: "210 degrees at 12 knots", heading: 210, speed: 12 },
+        { text: "040 degrees at 08 knots", heading: 40, speed: 8 },
+        { text: "290 degrees at 15 knots", heading: 290, speed: 15 }
+    ];
+    // Return a semi-random string based on the airfield string length for consistency
+    return variations[icao.length % variations.length];
+}
 
-    // Home Airfield Functionality
-    function setHomeAirfield() {
-        airfieldInput.value = HOME_AIRFIELD.toUpperCase();
-        matrixOutput.textContent = `Selected home airfield: ${HOME_AIRFIELD}\nClick Search to retrieve data.`;
-    }
-
-    // Search Execution Function
-    function performSearch() {
-        const query = airfieldInput.value.trim();
-        
-        if (!query) {
-            matrixOutput.textContent = "Error: Please enter an airfield target or click 'Home Airfield'.";
-            return;
-        }
-
-        matrixOutput.textContent = `Querying data for [${query.toUpperCase()}]...\n\n[Matrix Results Stub]\n- Temperature: ---\n- QNH: ---\n- Wind: ---\n- Density Altitude: ---`;
-        
-        // Dynamic fetch/calculation matrix logic will be integrated directly beneath here
-    }
-
-    // Event Listeners
-    homeBtn.addEventListener('click', setHomeAirfield);
-    searchBtn.addEventListener('click', performSearch);
+// Simple Runway Selector Math (Finds runway with minimum crosswind / maximum headwind component)
+function calculateBestRunway(runways, windHeading) {
+    if (!runways || runways.length === 0) return "N/A";
     
-    // Allow pressing enter inside the input box to trigger search
-    airfieldInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            performSearch();
+    let bestRunway = runways[0];
+    let minDifference = 180;
+
+    runways.forEach(rw => {
+        // Convert runway shorthand (e.g. "05") to degrees (50 degrees)
+        const rwHeading = parseInt(rw, 10) * 10;
+        let diff = Math.abs(rwHeading - windHeading);
+        if (diff > 180) diff = 360 - diff;
+        
+        if (diff < minDifference) {
+            minDifference = diff;
+            bestRunway = rw;
         }
     });
 
-    // Run automatically on load to ensure Rufforth East is standard default fallback
-    window.addEventListener('DOMContentLoaded', () => {
-        setHomeAirfield();
-    });
+    return bestRunway;
+}
+
+// Save config state to local browser storage
+function saveConfiguration() {
+    const config = {
+        registration: document.getElementById('aircraftReg').value,
+        homeAirfield: document.getElementById('homeAirfield').value.trim().toUpperCase()
+    };
+    
+    localStorage.setItem('aircraftConfig', JSON.stringify(config));
+    document.getElementById('configStatus').innerText = "Configuration saved successfully!";
+    setTimeout(() => { document.getElementById('configStatus').innerText = ""; }, 3000);
+}
+
+// Load initial config profile on startup
+function loadSavedConfigOnStartup() {
+    const saved = localStorage.getItem('aircraftConfig');
+    if (saved) {
+        const config = JSON.parse(saved);
+        document.getElementById('aircraftReg').value = config.registration;
+        document.getElementById('homeAirfield').value = config.homeAirfield;
+    }
+}
+
+// Process data rendering when an airfield is matched
+function updateCalculatorUI(airfieldKey) {
+    const cleanKey = airfieldKey.toUpperCase();
+    const airfield = airfieldDatabase[cleanKey];
+
+    if (!airfield) {
+        alert("Airfield not found in local database lookup.");
+        return;
+    }
+
+    // 1. Update Airfield Details
+    document.getElementById('outAirfield').innerText = airfield.name + " (" + cleanKey + ")";
+    document.getElementById('outRunways').innerText = airfield.runways.join(" / ");
+
+    // 2. Fetch Environmental Factors (Weather)
+    const weather = fetchMockWeather(cleanKey);
+    document.getElementById('outWind').innerText = weather.text;
+
+    // 3. Re-calculate active performance numbers/runways dynamically
+    const bestRunway = calculateBestRunway(airfield.runways, weather.heading);
+    document.getElementById('outBestRunway').innerText = "Runway " + bestRunway;
+}
+
+// Search Handler
+function searchAirfield() {
+    const query = document.getElementById('airfieldSearch').value.trim();
+    if (!query) {
+        alert("Please enter a search term.");
+        return;
+    }
+    updateCalculatorUI(query);
+}
+
+// Home Button Handler
+function loadHomeAirfield() {
+    const saved = localStorage.getItem('aircraftConfig');
+    if (!saved) {
+        alert("No configuration profile found. Please set your home airfield above and save it first.");
+        return;
+    }
+    
+    const config = JSON.parse(saved);
+    if (!config.homeAirfield) {
+        alert("No home airfield has been saved inside your aircraft configuration profile yet.");
+        return;
+    }
+
+    // Set search box value to match home setting visually and run calculation pipeline
+    document.getElementById('airfieldSearch').value = config.homeAirfield;
+    updateCalculatorUI(config.homeAirfield);
+}
+
+// Run startup check
+window.onload = loadSavedConfigOnStartup;
 </script>
 
 </body>
