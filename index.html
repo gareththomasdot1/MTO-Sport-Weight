@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aircraft Performance & Airfield Calculator 3.1 </title>
+    <title>Aircraft Performance & Airfield Calculator</title>
     <style>
         :root {
             --airbus-cyan: #00f2ff;
@@ -47,7 +47,7 @@
             flex-shrink: 0;
         }
 
-        .app-title { font-weight: bold; color: #fff; font-size: 0.9rem; letter-spacing: 0.5px; }
+        .app-title { font-weight: bold; color: #fff; font-size: 0.9rem; letter-spacing: 0.5px; display: flex; align-items: center; gap: 10px; }
         .header-right { display: flex; align-items: center; gap: 15px; }
 
         #btn-config {
@@ -140,7 +140,7 @@
         /* Footer Instrument Strip */
         footer { 
             height: 50px; background: #000; border-top: 2px solid var(--airbus-cyan); 
-            display: grid; grid-template-columns: repeat(4, 1fr); align-items: center; 
+            display: grid; grid-template-columns: repeat(6, 1fr); align-items: center; 
             flex-shrink: 0; 
         }
 
@@ -183,17 +183,17 @@
 
         <div class="form-group">
             <span class="form-label">Home Airfield (ICAO/Name)</span>
-            <input type="text" id="homeAirfield" placeholder="e.g., EGXU">
+            <input type="text" id="homeAirfield" placeholder="e.g., EGXU" onchange="calculateFlightSafety()">
         </div>
 
         <div class="form-group">
             <span class="form-label">Aircraft Empty Weight</span>
-            <input type="number" id="emptyWeight" value="275">
+            <input type="number" id="emptyWeight" value="275" onchange="calculateFlightSafety()">
         </div>
 
         <div class="form-group">
             <span class="form-label">Maximum Allowed Weight</span>
-            <input type="number" id="maxWeight" value="450">
+            <input type="number" id="maxWeight" value="450" onchange="calculateFlightSafety()">
         </div>
 
         <button id="btn-save" class="btn-save" onclick="saveConfiguration()">SAVE & APPLY</button>
@@ -202,7 +202,7 @@
 
 <div id="main" class="dashboard">
     <header>
-        <div class="app-title">FLIGHT PERFORMANCE MANAGEMENT SYSTEM</div>
+        <div class="app-title">FLIGHT PERFORMANCE MANAGEMENT SYSTEM <span id="header-status"></span></div>
         <div class="header-right">
             <button id="btn-config" onclick="openNav()">&#9881;</button>
         </div>
@@ -229,10 +229,10 @@
                 </div>
 
                 <div class="form-group">
-                    <span class="form-label">Baggage Weight <span id="val-baggage" class="range-val">5 kg</span></span>
+                    <span class="form-label">Baggage Weight <span id="val-baggage" class="range-val">0 kg</span></span>
                     <div class="slider-container">
-                        <input type="range" id="baggageSlider" min="0" max="50" value="5" oninput="syncWeight('baggage', this.value)">
-                        <input type="number" id="baggageWeight" min="0" max="50" value="5" oninput="syncWeight('baggage', this.value)">
+                        <input type="range" id="baggageSlider" min="0" max="50" value="0" oninput="syncWeight('baggage', this.value)">
+                        <input type="number" id="baggageWeight" min="0" max="50" value="0" oninput="syncWeight('baggage', this.value)">
                     </div>
                 </div>
 
@@ -244,7 +244,7 @@
                     </div>
                 </div>
 
-                <button class="btn-action" onclick="calculateFlightSafety()">COMPUTE STATUS & ENVIRONMENT</button>
+                <button class="btn-action" onclick="calculateFlightSafety()">FORCE RE-COMPUTE</button>
             </div>
         </div>
 
@@ -303,6 +303,16 @@
             <span class="unit">Knots</span>
         </div>
         <div class="met-item">
+            <div class="met-lbl">HEADWIND</div>
+            <span id="hw-comp" class="val">--</span>
+            <span class="unit">Knots</span>
+        </div>
+        <div class="met-item">
+            <div class="met-lbl">DENS ALT</div>
+            <span id="dens-alt" class="val">--</span>
+            <span class="unit">Feet</span>
+        </div>
+        <div class="met-item">
             <div class="met-lbl">RWY DESIGNATION</div>
             <span id="rwy" class="val" style="color: var(--airbus-cyan);">--</span>
             <span class="unit">RECOMMENDED</span>
@@ -328,6 +338,9 @@ const airfieldDatabase = {
     "CAERNARFON": { name: "Caernarfon", runways: ["07", "25", "02", "20"], lat: 53.103, lon: -4.332, elev: 4 }
 };
 
+let cachedWeather = null;
+let lastCoords = "";
+
 function openNav() { document.getElementById("mySidebar").style.width = "350px"; }
 function closeNav() { document.getElementById("mySidebar").style.width = "0"; }
 
@@ -351,23 +364,33 @@ function syncWeight(type, value) {
         document.getElementById('fuelLoad').value = numVal;
         document.getElementById('val-fuel').innerText = numVal + " L";
     }
+    
+    // Automatically recalculate on slider adjustment
+    calculateFlightSafety();
 }
 
-// Function to pull real-time weather via the Open-Meteo API
+// Function to pull real-time weather via the Open-Meteo API (with caching for live sliders)
 async function fetchRealWeather(lat, lon) {
+    const coordKey = lat + "," + lon;
+    if (cachedWeather && lastCoords === coordKey) {
+        return cachedWeather;
+    }
+
     try {
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,surface_pressure,wind_speed_10m,wind_direction_10m&wind_speed_unit=kn`;
         const res = await fetch(url);
         if (!res.ok) throw new Error("API Network Error");
         const data = await res.json();
         
-        return {
+        cachedWeather = {
             heading: data.current.wind_direction_10m,
             speed: Math.round(data.current.wind_speed_10m),
             temp: data.current.temperature_2m,
             qnh: Math.round(data.current.surface_pressure), 
             text: `OAT ${data.current.temperature_2m}°C, QNH ${Math.round(data.current.surface_pressure)}`
         };
+        lastCoords = coordKey;
+        return cachedWeather;
     } catch (error) {
         console.error("Failed to fetch weather. Falling back to ISA conditions.", error);
         return { heading: 270, speed: 10, temp: 15, qnh: 1013, text: "API FAILED (ISA EST)" };
@@ -410,6 +433,7 @@ function saveConfiguration() {
     }, 800);
     
     document.getElementById('outReg').innerText = config.registration;
+    calculateFlightSafety();
 }
 
 function loadSavedConfigOnStartup() {
@@ -428,16 +452,16 @@ function loadSavedConfigOnStartup() {
     syncWeight('passenger', document.getElementById('passengerWeight').value);
     syncWeight('baggage', document.getElementById('baggageWeight').value);
     syncWeight('fuel', document.getElementById('fuelLoad').value);
+    
+    calculateFlightSafety();
 }
 
 // Adjusted to handle async data fetching and incorporate environmental factors into performance
 async function calculateFlightSafety() {
     let statusElement = document.getElementById('outStatus');
+    let titleStatusElement = document.getElementById('header-status');
     let runwayReqElement = document.getElementById('outRunwayReq');
     
-    statusElement.innerHTML = '<span class="status-text" style="color: #888;">CALCULATING...</span>';
-    runwayReqElement.innerHTML = '<span class="status-text" style="color: #888;">...</span>';
-
     const saved = localStorage.getItem('aircraftConfig');
     let config = saved ? JSON.parse(saved) : {
         homeAirfield: document.getElementById('homeAirfield').value.trim().toUpperCase(),
@@ -461,6 +485,9 @@ async function calculateFlightSafety() {
     document.getElementById('outFuelWeight').innerText = fuelWeight + " kg";
 
     const airfield = airfieldDatabase[airfieldKey];
+    
+    let finalStatusHtml = '';
+
     if (airfield) {
         document.getElementById('outAirfield').innerText = airfield.name + " (" + airfieldKey + ")";
         document.getElementById('outRunways').innerText = airfield.runways.join(" / ");
@@ -481,13 +508,15 @@ async function calculateFlightSafety() {
         const elevFt = airfield.elev * 3.28084;
         const pressureAltitude = elevFt + (1013 - weather.qnh) * 30; 
         const isaTemp = 15 - (2 * (elevFt / 1000));
-        const densityAltitude = pressureAltitude + 120 * (weather.temp - isaTemp);
+        const densityAltitude = Math.round(pressureAltitude + 120 * (weather.temp - isaTemp));
+        document.getElementById('dens-alt').innerText = densityAltitude;
         
         // 2. Calculate Headwind Component for the chosen runway
         const rwyHeading = parseInt(bestRunway, 10) * 10;
         const windAngleRad = weather.heading * (Math.PI / 180);
         const rwyAngleRad = rwyHeading * (Math.PI / 180);
-        const headwindComponent = weather.speed * Math.cos(windAngleRad - rwyAngleRad);
+        const headwindComponent = Math.round(weather.speed * Math.cos(windAngleRad - rwyAngleRad));
+        document.getElementById('hw-comp').innerText = headwindComponent;
 
         // 3. Compute "Effective Performance Weight" based on environmental factors
         let effectiveWeight = totalWeight;
@@ -525,30 +554,35 @@ async function calculateFlightSafety() {
 
         // 5. Determine final safety status based on structural limits AND performance limits
         if (totalWeight > maxWeight) {
-            statusElement.innerHTML = '<span class="status-text status-not-ok">NOT OK (OVERWEIGHT)</span>';
+            finalStatusHtml = '<span class="status-text status-not-ok">NOT OK (OVERWEIGHT)</span>';
         } else if (effectiveWeight > maxWeight) {
-            statusElement.innerHTML = '<span class="status-text status-not-ok">NOT OK (PERF LIMIT)</span>';
+            finalStatusHtml = '<span class="status-text status-not-ok">NOT OK (PERF LIMIT)</span>';
         } else if (effectiveWeight >= (maxWeight * 0.85)) {
-            // Using 85% of effective weight as a marginal trigger, accounting for weather
-            statusElement.innerHTML = '<span class="status-text status-marginal">MARGINAL</span>';
+            finalStatusHtml = '<span class="status-text status-marginal">MARGINAL</span>';
         } else {
-            statusElement.innerHTML = '<span class="status-text status-ok">OK</span>';
+            finalStatusHtml = '<span class="status-text status-ok">OK</span>';
         }
 
     } else {
         document.getElementById('outAirfield').innerText = airfieldKey;
         document.getElementById('outRunways').innerText = "--";
+        document.getElementById('dens-alt').innerText = "--";
+        document.getElementById('hw-comp').innerText = "--";
         runwayReqElement.innerText = "N/A";
         
         // Fallback checks if airfield isn't found
         if (totalWeight > maxWeight) {
-            statusElement.innerHTML = '<span class="status-text status-not-ok">NOT OK</span>';
+            finalStatusHtml = '<span class="status-text status-not-ok">NOT OK</span>';
         } else if (totalWeight >= (maxWeight * 0.85)) {
-            statusElement.innerHTML = '<span class="status-text status-marginal">MARGINAL</span>';
+            finalStatusHtml = '<span class="status-text status-marginal">MARGINAL</span>';
         } else {
-            statusElement.innerHTML = '<span class="status-text status-ok">OK</span>';
+            finalStatusHtml = '<span class="status-text status-ok">OK</span>';
         }
     }
+    
+    // Apply final status to both the table and the header title
+    statusElement.innerHTML = finalStatusHtml;
+    titleStatusElement.innerHTML = "- " + finalStatusHtml;
 }
 
 window.onload = loadSavedConfigOnStartup;
