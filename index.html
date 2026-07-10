@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>REGC Performance PWA v2.1</title>
+    <title>REGC Performance PWA v2.2</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0b0e14">
-    <link rel="manifest" href="data:application/json;base64,ewogICJub21lIjogIlJFR0MgUGVyZm9ybWFuY2UgdjIuMSIsCiAgInNob3J0X25hbWUiOiAiUkVHQyBDYWxjIiwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwYjBlMTQiLAogICJ0aGVtZV9jb2xvciI6ICIjMGIwZTE0IiwKICAib3JpZW50YXRpb24iOiAibGFuZHNjYXBlIgp9">
+    <link rel="manifest" href="data:application/json;base64,ewogICJub21lIjogIlJFR0MgUGVyZm9ybWFuY2UgdjIuMiIsCiAgInNob3J0X25hbWUiOiAiUkVHQyBDYWxjIiwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwYjBlMTQiLAogICJ0aGVtZV9jb2xvciI6ICIjMGIwZTE0IiwKICAib3JpZW50YXRpb24iOiAibGFuZHNjYXBlIgp9">
 
     <style>
         :root {
@@ -54,8 +54,8 @@
         }
 
         .app-title { font-weight: bold; color: #fff; font-size: 0.9rem; letter-spacing: 0.5px; }
-        .version-tag { color: var(--airbus-magenta); font-family: monospace; margin-left: 8px; font-size: 0.8rem; }
         .header-right { display: flex; align-items: center; gap: 15px; }
+        .version-tag { color: var(--airbus-magenta); font-family: monospace; font-size: 0.8rem; font-weight: bold; }
 
         #btn-config {
             background: transparent; border: none; color: #666; cursor: pointer; font-size: 1.2rem;
@@ -186,7 +186,7 @@
 
         <div class="form-group">
             <span class="form-label">Home Airfield (ICAO)</span>
-            <input type="text" id="homeAirfield" value="EGXU" oninput="calculateFlightSafety()">
+            <input type="text" id="homeAirfield" value="EGXU" oninput="updateAirfieldConfiguration()">
         </div>
 
         <div class="form-group">
@@ -234,8 +234,9 @@
 
 <div id="main" class="dashboard">
     <header>
-        <div class="app-title">FLIGHT PERFORMANCE MANAGEMENT SYSTEM <span class="version-tag">v2.1</span></div>
+        <div class="app-title">FLIGHT PERFORMANCE MANAGEMENT SYSTEM</div>
         <div class="header-right">
+            <span class="version-tag">v2.2</span>
             <button id="btn-config" onclick="openNav()">&#9881;</button>
         </div>
     </header>
@@ -315,6 +316,11 @@
                         <td id="outReg" class="val-out">--</td>
                         <td id="stat-reg" class="status-ok">OK</td>
                     </tr>
+                    <tr id="row-airfield">
+                        <td>AIRFIELD NAME</td>
+                        <td id="outAirfield" class="val-out">--</td>
+                        <td id="stat-airfield">--</td>
+                    </tr>
                     <tr id="row-pilot">
                         <td>PILOT WEIGHT</td>
                         <td id="outPilot" class="val-out">--</td>
@@ -367,9 +373,9 @@
             <span class="unit">RECOMMENDED</span>
         </div>
         <div class="met-item">
-            <div class="met-lbl">AVAILABLE LENGTH</div>
-            <span id="rwy-len" class="val">--</span>
-            <span class="unit">Meters Available</span>
+            <div class="met-lbl">OPEN-METEO ENGINE</div>
+            <span id="met-sync-status" class="val" style="color: var(--airbus-amber);">FETCHING</span>
+            <span class="unit">API CONNECTION</span>
         </div>
     </footer>
     
@@ -377,15 +383,16 @@
 </div>
 
 <script>
+// Internal Georeferenced Aerodrome Database
 const airfieldDatabase = {
-    "EGXU": { name: "Rufforth East", runways: [50, 230], length: 510, elevation: 50 },
-    "RUFFORTH EAST": { name: "Rufforth East", runways: [50, 230], length: 510, elevation: 50 }
+    "EGXU": { name: "Rufforth East", runways: [50, 230], length: 510, elevation: 50, lat: 53.949, lon: -1.187 },
+    "RUFFORTH EAST": { name: "Rufforth East", runways: [50, 230], length: 510, elevation: 50, lat: 53.949, lon: -1.187 }
 };
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         const swCode = `
-            const CACHE_NAME = 'regc-calc-v2.1';
+            const CACHE_NAME = 'regc-calc-v2.2';
             self.addEventListener('install', e => self.skipWaiting());
             self.addEventListener('activate', e => e.waitUntil(clients.claim()));
             self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
@@ -405,6 +412,53 @@ function syncWeight(type, value) {
     calculateFlightSafety();
 }
 
+function updateAirfieldConfiguration() {
+    fetchLiveWeather();
+    calculateFlightSafety();
+}
+
+async function fetchLiveWeather() {
+    const airfieldKey = (document.getElementById('homeAirfield').value || "EGXU").trim().toUpperCase();
+    const airfield = airfieldDatabase[airfieldKey];
+    const statusEl = document.getElementById('met-sync-status');
+    
+    if (!airfield) {
+        statusEl.innerText = "OFFLINE";
+        statusEl.style.color = "var(--airbus-amber)";
+        return;
+    }
+
+    statusEl.innerText = "FETCHING";
+    statusEl.style.color = "var(--airbus-amber)";
+
+    try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${airfield.lat}&longitude=${airfield.lon}&current=temperature_2m,surface_pressure,wind_speed_10m,wind_direction_10m&wind_speed_unit=kn&forecast_days=1`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("API Network Response Error");
+        
+        const data = await response.json();
+        const current = data.current;
+        
+        // Map values into DOM inputs
+        document.getElementById('metarTemp').value = Math.round(current.temperature_2m);
+        document.getElementById('windDir').value = Math.round(current.wind_direction_10m);
+        document.getElementById('windSpd').value = Math.round(current.wind_speed_10m);
+        
+        // Derive approximate QNH from surface station pressure (hPa)
+        const rawPressure = current.surface_pressure;
+        const qnhDerivation = Math.round(rawPressure + (airfield.elevation / 8.3));
+        document.getElementById('metarQnh').value = qnhDerivation;
+
+        statusEl.innerText = "MET SYNCED";
+        statusEl.style.color = "var(--airbus-green)";
+        calculateFlightSafety();
+    } catch (error) {
+        console.error("Open-Meteo Sync Fault:", error);
+        statusEl.innerText = "MET TIMEOUT";
+        statusEl.style.color = "var(--airbus-red)";
+    }
+}
+
 function saveConfiguration() {
     const config = {
         registration: document.getElementById('aircraftReg').value.toUpperCase(),
@@ -419,17 +473,17 @@ function saveConfiguration() {
         safetyFactor: parseFloat(document.getElementById('safetyFactor').value) || 1.3
     };
     
-    localStorage.setItem('aircraftConfigPWA_v2.1', JSON.stringify(config));
+    localStorage.setItem('aircraftConfigPWA_v2.2', JSON.stringify(config));
     document.getElementById('outReg').innerText = config.registration;
     
     const btn = document.getElementById("btn-save");
     btn.innerText = "CONFIG APPLIED";
     setTimeout(() => { btn.innerText = "SAVE CONFIG"; closeNav(); }, 800);
-    calculateFlightSafety();
+    updateAirfieldConfiguration();
 }
 
 function loadSavedConfigOnStartup() {
-    const saved = localStorage.getItem('aircraftConfigPWA_v2.1');
+    const saved = localStorage.getItem('aircraftConfigPWA_v2.2');
     if (saved) {
         const config = JSON.parse(saved);
         document.getElementById('aircraftReg').value = config.registration || "G-IROI";
@@ -442,7 +496,6 @@ function loadSavedConfigOnStartup() {
         document.getElementById('passengerMax').value = config.passengerMax ?? 110;
         document.getElementById('baseTodr').value = config.baseTodr ?? 200;
         document.getElementById('safetyFactor').value = config.safetyFactor ?? 1.3;
-        document.getElementById('outReg').innerText = config.registration || "G-IROI";
     }
     document.getElementById('outReg').innerText = document.getElementById('aircraftReg').value.toUpperCase();
     
@@ -451,7 +504,7 @@ function loadSavedConfigOnStartup() {
     document.getElementById('val-baggage').innerText = document.getElementById('baggageSlider').value;
     document.getElementById('val-fuel').innerText = document.getElementById('fuelSlider').value;
     
-    calculateFlightSafety();
+    fetchLiveWeather();
 }
 
 function setRowClass(cellId, status, text) {
@@ -465,12 +518,11 @@ function setRowClass(cellId, status, text) {
 }
 
 function calculateFlightSafety() {
-    const saved = localStorage.getItem('aircraftConfigPWA_v2.1');
+    const saved = localStorage.getItem('aircraftConfigPWA_v2.2');
     let cfg = saved ? JSON.parse(saved) : {
         homeAirfield: "EGXU", emptyWeight: 275, maxWeight: 450, pilotMin: 60, pilotMax: 110, passengerMin: 0, passengerMax: 110, baseTodr: 200, safetyFactor: 1.3
     };
 
-    // Refresh display registration dynamically if typed in real time
     const liveReg = document.getElementById('aircraftReg').value.toUpperCase();
     document.getElementById('outReg').innerText = liveReg || "G-IROI";
 
@@ -482,7 +534,18 @@ function calculateFlightSafety() {
     
     const totalAUW = cfg.emptyWeight + pilotW + passW + baggageW + fuelW;
     const airfieldKey = (document.getElementById('homeAirfield').value || "EGXU").trim().toUpperCase();
-    const airfield = airfieldDatabase[airfieldKey] || { name: "Unknown", runways: [90], length: 400, elevation: 100 };
+    const airfield = airfieldDatabase[airfieldKey];
+
+    // Identify Airfield Name parameters dynamically
+    if (airfield) {
+        document.getElementById('outAirfield').innerText = airfield.name;
+        setRowClass('stat-airfield', 'OK', 'FOUND');
+    } else {
+        document.getElementById('outAirfield').innerText = airfieldKey + " (UNMAPPED)";
+        setRowClass('stat-airfield', 'WARN', 'USING DEFAULT');
+    }
+
+    const activeAirfield = airfield || { name: "Unknown", runways: [90], length: 400, elevation: 100 };
 
     // Environmental Parameters
     const temp = parseFloat(document.getElementById('metarTemp').value) || 15;
@@ -492,8 +555,8 @@ function calculateFlightSafety() {
     const surfaceMult = parseFloat(document.getElementById('surfaceType').value) || 1.0;
 
     // 1. Calculate Density Altitude
-    const pressureAlt = airfield.elevation + ((1013 - qnh) * 30);
-    const isaTemp = 15 - (2 * (airfield.elevation / 1000));
+    const pressureAlt = activeAirfield.elevation + ((1013 - qnh) * 30);
+    const isaTemp = 15 - (2 * (activeAirfield.elevation / 1000));
     const densityAlt = Math.round(pressureAlt + (120 * (temp - isaTemp)));
     document.getElementById('outDensityAlt').innerText = densityAlt + " ft";
 
@@ -504,10 +567,10 @@ function calculateFlightSafety() {
     }
 
     // 2. Select Best Runway & Calculate Wind Component
-    let bestRwyHead = airfield.runways[0];
+    let bestRwyHead = activeAirfield.runways[0];
     let maxHeadwind = -99;
     
-    airfield.runways.forEach(rwyHeading => {
+    activeAirfield.runways.forEach(rwyHeading => {
         let angleRad = Math.abs(wDir - rwyHeading) * (Math.PI / 180);
         let headwind = wSpd * Math.cos(angleRad);
         if (headwind > maxHeadwind) {
@@ -518,7 +581,7 @@ function calculateFlightSafety() {
 
     let displayRwy = String(Math.round(bestRwyHead / 10)).padStart(2, '0');
     document.getElementById('rwy').innerText = displayRwy;
-    document.getElementById('rwy-len').innerText = airfield.length + " m";
+    document.getElementById('rwy-len').innerText = activeAirfield.length + " m";
     document.getElementById('headwind-val').innerText = Math.round(maxHeadwind) + " KT";
 
     // 3. Dynamic Takeoff Distance Required (TODR)
@@ -565,11 +628,11 @@ function calculateFlightSafety() {
     } else { setRowClass('stat-weight', 'OK', 'OK'); }
 
     // Runway Comparison Check
-    document.getElementById('outRunways').innerText = `${finalTodr}m Req / ${airfield.length}m Avail`;
-    if (finalTodr > airfield.length) {
+    document.getElementById('outRunways').innerText = `${finalTodr}m Req / ${activeAirfield.length}m Avail`;
+    if (finalTodr > activeAirfield.length) {
         setRowClass('stat-runway', 'FAIL', 'RUNWAY SHORT');
         globalSafety = 'FAIL';
-    } else if (finalTodr >= (airfield.length * 0.85)) {
+    } else if (finalTodr >= (activeAirfield.length * 0.85)) {
         setRowClass('stat-runway', 'WARN', 'MARGINAL MARGIN');
         if (globalSafety !== 'FAIL') globalSafety = 'WARN';
     } else {
