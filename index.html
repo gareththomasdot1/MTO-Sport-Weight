@@ -9,13 +9,19 @@
         .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .section { margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
         .form-group { margin-bottom: 15px; }
+        .row { display: flex; gap: 15px; }
+        .col { flex: 1; }
         label { display: block; font-weight: bold; margin-bottom: 5px; }
-        input[type="text"] { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .btn-primary { background: #007bff; color: white; width: 100%; font-size: 16px; padding: 12px; }
         .btn-success { background: #28a745; color: white; }
         .results-box { background: #e9ecef; padding: 15px; border-radius: 4px; margin-top: 15px; }
         .status { font-style: italic; color: #666; margin-top: 5px; }
+        .status-badge { display: inline-block; padding: 5px 10px; border-radius: 4px; font-weight: bold; color: white; }
+        .status-ok { background-color: #28a745; }
+        .status-marginal { background-color: #ffc107; color: #333; }
+        .status-not-ok { background-color: #dc3545; }
         .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #777; }
     </style>
 </head>
@@ -25,27 +31,65 @@
     <h2>Settings</h2>
 
     <div class="section">
-        <h3>1. Your Aircraft & Airfield</h3>
-        <div class="form-group">
-            <label for="aircraftReg">Aircraft Registration</label>
-            <input type="text" id="aircraftReg" value="G-IROI">
+        <h3>1. Your Aircraft & Airfield Settings</h3>
+        <div class="row">
+            <div class="col form-group">
+                <label for="aircraftReg">Aircraft Registration</label>
+                <input type="text" id="aircraftReg" value="G-IROI">
+            </div>
+            <div class="col form-group">
+                <label for="homeAirfield">Home Airfield (Code or Name)</label>
+                <input type="text" id="homeAirfield" placeholder="e.g., EGBX or Rufforth East">
+            </div>
         </div>
-        <div class="form-group">
-            <label for="homeAirfield">Home Airfield (Code or Name)</label>
-            <input type="text" id="homeAirfield" placeholder="e.g., EGBX or Rufforth East">
+
+        <div class="row">
+            <div class="col form-group">
+                <label for="emptyWeight">Aircraft Empty Weight (kg)</label>
+                <input type="number" id="emptyWeight" placeholder="e.g., 275">
+            </div>
+            <div class="col form-group">
+                <label for="maxWeight">Maximum Allowed Weight (kg)</label>
+                <input type="number" id="maxWeight" placeholder="e.g., 500">
+            </div>
         </div>
+        
         <button class="btn-success" onclick="saveConfiguration()">Save Settings</button>
         <div id="configStatus" class="status"></div>
     </div>
 
     <div class="section">
-        <h3>2. Check Conditions</h3>
-        <button class="btn-primary" onclick="calculateForHomeAirfield()">Get Weather & Best Runway</button>
+        <h3>2. Current Flight Loading</h3>
+        <div class="row">
+            <div class="col form-group">
+                <label for="crewWeight">Pilot & Passenger Weight (kg)</label>
+                <input type="number" id="crewWeight" value="0">
+            </div>
+            <div class="col form-group">
+                <label for="baggageWeight">Baggage Weight (kg)</label>
+                <input type="number" id="baggageWeight" value="0">
+            </div>
+            <div class="col form-group">
+                <label for="fuelLoad">Fuel Load (Litres)</label>
+                <input type="number" id="fuelLoad" value="0" oninput="calculateFuelWeight()">
+            </div>
+            <div class="col form-group">
+                <label for="fuelWeight">Fuel Weight (kg)</label>
+                <input type="number" id="fuelWeight" value="0">
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>3. Check Conditions</h3>
+        <button class="btn-primary" onclick="calculateFlightSafety()">Get Weather & Flight Status</button>
     </div>
 
     <div class="section">
         <h3>Results</h3>
         <div class="results-box">
+            <p><strong>Flight Status:</strong> <span id="outStatus">--</span></p>
+            <p><strong>Total Flight Weight:</strong> <span id="outTotalWeight">--</span></p>
             <p><strong>Airfield:</strong> <span id="outAirfield">None</span></p>
             <p><strong>Runways:</strong> <span id="outRunways">--</span></p>
             <p><strong>Wind:</strong> <span id="outWind">--</span></p>
@@ -54,7 +98,7 @@
     </div>
 
     <div class="footer">
-        <p>Disclaimer: For informational and simulation purposes only. Always verify data independently. | Version 1.1.0</p>
+        <p>Disclaimer: For informational and simulation purposes only. Always verify data independently. | Version 1.2.0</p>
     </div>
 </div>
 
@@ -68,6 +112,12 @@ const airfieldDatabase = {
     "EGCA": { name: "Caernarfon", runways: ["07", "25", "02", "20"] },
     "CAERNARFON": { name: "Caernarfon", runways: ["07", "25", "02", "20"] }
 };
+
+// Auto-calculate fuel weight assuming standard AVGAS / Fuel density of ~0.72 kg per litre
+function calculateFuelWeight() {
+    const litres = parseFloat(document.getElementById('fuelLoad').value) || 0;
+    document.getElementById('fuelWeight').value = Math.round(litres * 0.72);
+}
 
 // Mock weather selection helper
 function fetchMockWeather(airfieldKey) {
@@ -87,7 +137,6 @@ function calculateBestRunway(runways, windHeading) {
     let minDifference = 180;
 
     runways.forEach(rw => {
-        // Convert runway shorthand (e.g. "05") to degrees (50 degrees)
         const rwHeading = parseInt(rw, 10) * 10;
         let diff = Math.abs(rwHeading - windHeading);
         if (diff > 180) diff = 360 - diff;
@@ -105,7 +154,9 @@ function calculateBestRunway(runways, windHeading) {
 function saveConfiguration() {
     const config = {
         registration: document.getElementById('aircraftReg').value,
-        homeAirfield: document.getElementById('homeAirfield').value.trim().toUpperCase()
+        homeAirfield: document.getElementById('homeAirfield').value.trim().toUpperCase(),
+        emptyWeight: document.getElementById('emptyWeight').value,
+        maxWeight: document.getElementById('maxWeight').value
     };
     
     localStorage.setItem('aircraftConfig', JSON.stringify(config));
@@ -118,35 +169,62 @@ function loadSavedConfigOnStartup() {
     const saved = localStorage.getItem('aircraftConfig');
     if (saved) {
         const config = JSON.parse(saved);
-        document.getElementById('aircraftReg').value = config.registration;
-        document.getElementById('homeAirfield').value = config.homeAirfield;
+        document.getElementById('aircraftReg').value = config.registration || "G-IROI";
+        document.getElementById('homeAirfield').value = config.homeAirfield || "";
+        document.getElementById('emptyWeight').value = config.emptyWeight || "";
+        document.getElementById('maxWeight').value = config.maxWeight || "";
     }
 }
 
-// Main calculation handler using the defined home airfield
-function calculateForHomeAirfield() {
+// Main calculation handler
+function calculateFlightSafety() {
     const saved = localStorage.getItem('aircraftConfig');
     if (!saved) {
-        alert("Please save your home airfield settings first.");
+        alert("Please save your aircraft and airfield settings first.");
         return;
     }
     
     const config = JSON.parse(saved);
     const airfieldKey = config.homeAirfield;
+    const emptyWeight = parseFloat(config.emptyWeight) || 0;
+    const maxWeight = parseFloat(config.maxWeight) || 0;
 
     if (!airfieldKey) {
-        alert("Please enter and save a home airfield before calculating.");
+        alert("Please enter and save a home airfield before checking.");
+        return;
+    }
+    if (emptyWeight <= 0 || maxWeight <= 0) {
+        alert("Please enter valid aircraft weights in your settings and save them first.");
         return;
     }
 
-    const airfield = airfieldDatabase[airfieldKey];
+    // 1. Calculate Weights
+    const crewWeight = parseFloat(document.getElementById('crewWeight').value) || 0;
+    const baggageWeight = parseFloat(document.getElementById('baggageWeight').value) || 0;
+    const fuelWeight = parseFloat(document.getElementById('fuelWeight').value) || 0;
+    
+    const totalWeight = emptyWeight + crewWeight + baggageWeight + fuelWeight;
+    document.getElementById('outTotalWeight').innerText = totalWeight + " kg (Max: " + maxWeight + " kg)";
 
+    // 2. Evaluate Status (Marginal is within 20% of the remaining structural payload gap before MTOW)
+    // Or simpler: within 20% total margin under the MTOW line. Let's look at 80% to 100% capacity.
+    let statusHTML = "";
+    if (totalWeight > maxWeight) {
+        statusHTML = '<span class="status-badge status-not-ok">NOT OK (Overweight)</span>';
+    } else if (totalWeight >= (maxWeight * 0.80)) {
+        statusHTML = '<span class="status-badge status-marginal">Marginal (Within 20% of Max)</span>';
+    } else {
+        statusHTML = '<span class="status-badge status-ok">OK</span>';
+    }
+    document.getElementById('outStatus').innerHTML = statusHTML;
+
+    // 3. Look up Airfield and Environment
+    const airfield = airfieldDatabase[airfieldKey];
     if (!airfield) {
         alert("Airfield not found in the database. Try using an exact code like EGBX or EGXU.");
         return;
     }
 
-    // Update screen data
     document.getElementById('outAirfield').innerText = airfield.name + " (" + airfieldKey + ")";
     document.getElementById('outRunways').innerText = airfield.runways.join(" / ");
 
