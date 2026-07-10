@@ -9,19 +9,28 @@
         .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .section { margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
         .form-group { margin-bottom: 15px; }
-        .row { display: flex; gap: 15px; }
-        .col { flex: 1; }
+        .row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .col { flex: 1; min-width: 200px; }
         label { display: block; font-weight: bold; margin-bottom: 5px; }
         input[type="text"], input[type="number"] { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        
+        /* Slider styling */
+        .slider-container { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
+        input[type="range"] { flex: 1; accent-color: #007bff; }
+        .slider-container input[type="number"] { width: 80px; text-align: center; }
+
         button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-primary { background: #007bff; color: white; width: 100%; font-size: 16px; padding: 12px; }
+        .btn-primary { background: #007bff; color: white; width: 100%; font-size: 16px; padding: 12px; margin-top: 10px; }
         .btn-success { background: #28a745; color: white; }
         .results-box { background: #e9ecef; padding: 15px; border-radius: 4px; margin-top: 15px; }
         .status { font-style: italic; color: #666; margin-top: 5px; }
-        .status-badge { display: inline-block; padding: 5px 10px; border-radius: 4px; font-weight: bold; color: white; }
+        
+        /* Status Badges */
+        .status-badge { display: inline-block; padding: 6px 12px; border-radius: 4px; font-weight: bold; color: white; font-size: 14px; }
         .status-ok { background-color: #28a745; }
         .status-marginal { background-color: #ffc107; color: #333; }
         .status-not-ok { background-color: #dc3545; }
+        
         .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #777; }
     </style>
 </head>
@@ -46,11 +55,11 @@
         <div class="row">
             <div class="col form-group">
                 <label for="emptyWeight">Aircraft Empty Weight (kg)</label>
-                <input type="number" id="emptyWeight" placeholder="e.g., 275">
+                <input type="number" id="emptyWeight" placeholder="e.g., 275" value="275">
             </div>
             <div class="col form-group">
                 <label for="maxWeight">Maximum Allowed Weight (kg)</label>
-                <input type="number" id="maxWeight" placeholder="e.g., 500">
+                <input type="number" id="maxWeight" placeholder="e.g., 450" value="450">
             </div>
         </div>
         
@@ -59,23 +68,30 @@
     </div>
 
     <div class="section">
-        <h3>2. Current Flight Loading</h3>
-        <div class="row">
-            <div class="col form-group">
-                <label for="crewWeight">Pilot & Passenger Weight (kg)</label>
-                <input type="number" id="crewWeight" value="0">
+        <h3>2. Flight Loading</h3>
+        
+        <div class="form-group">
+            <label for="crewWeight">Pilot & Passenger Weight (kg)</label>
+            <div class="slider-container">
+                <input type="range" id="crewSlider" min="0" max="250" value="90" oninput="syncWeight('crew', this.value)">
+                <input type="number" id="crewWeight" min="0" max="250" value="90" oninput="syncWeight('crew', this.value)">
             </div>
-            <div class="col form-group">
-                <label for="baggageWeight">Baggage Weight (kg)</label>
-                <input type="number" id="baggageWeight" value="0">
+        </div>
+
+        <div class="form-group">
+            <label for="baggageWeight">Baggage Weight (kg)</label>
+            <div class="slider-container">
+                <input type="range" id="baggageSlider" min="0" max="50" value="5" oninput="syncWeight('baggage', this.value)">
+                <input type="number" id="baggageWeight" min="0" max="50" value="5" oninput="syncWeight('baggage', this.value)">
             </div>
-            <div class="col form-group">
-                <label for="fuelLoad">Fuel Load (Litres)</label>
-                <input type="number" id="fuelLoad" value="0" oninput="calculateFuelWeight()">
-            </div>
-            <div class="col form-group">
-                <label for="fuelWeight">Fuel Weight (kg)</label>
-                <input type="number" id="fuelWeight" value="0">
+        </div>
+
+        <div class="form-group">
+            <label for="fuelLoad">Fuel Load (Litres)</label>
+            <div class="slider-container">
+                <input type="range" id="fuelSlider" min="0" max="100" value="40" oninput="syncWeight('fuel', this.value)">
+                <input type="number" id="fuelLoad" min="0" max="100" value="40" oninput="syncWeight('fuel', this.value)">
+                <span style="font-size: 14px; color: #555; min-width: 60px;">= <span id="fuelWeightLabel">29</span> kg</span>
             </div>
         </div>
     </div>
@@ -98,7 +114,7 @@
     </div>
 
     <div class="footer">
-        <p>Disclaimer: For informational and simulation purposes only. Always verify data independently. | Version 1.2.0</p>
+        <p>Disclaimer: For informational and simulation purposes only. Always verify data independently. | Version 1.3.0</p>
     </div>
 </div>
 
@@ -113,13 +129,26 @@ const airfieldDatabase = {
     "CAERNARFON": { name: "Caernarfon", runways: ["07", "25", "02", "20"] }
 };
 
-// Auto-calculate fuel weight assuming standard AVGAS / Fuel density of ~0.72 kg per litre
-function calculateFuelWeight() {
-    const litres = parseFloat(document.getElementById('fuelLoad').value) || 0;
-    document.getElementById('fuelWeight').value = Math.round(litres * 0.72);
+// Keeps Sliders and Number Boxes matched up in real-time
+function syncWeight(type, value) {
+    let numVal = parseInt(value) || 0;
+    
+    if (type === 'crew') {
+        document.getElementById('crewSlider').value = numVal;
+        document.getElementById('crewWeight').value = numVal;
+    } else if (type === 'baggage') {
+        document.getElementById('baggageSlider').value = numVal;
+        document.getElementById('baggageWeight').value = numVal;
+    } else if (type === 'fuel') {
+        document.getElementById('fuelSlider').value = numVal;
+        document.getElementById('fuelLoad').value = numVal;
+        // Assume fuel density is roughly 0.72 kg per litre
+        let computedWeight = Math.round(numVal * 0.72);
+        document.getElementById('fuelWeightLabel').innerText = computedWeight;
+    }
 }
 
-// Mock weather selection helper
+// Mock weather helper
 function fetchMockWeather(airfieldKey) {
     const variations = [
         { text: "210 degrees at 12 knots", heading: 210 },
@@ -129,7 +158,7 @@ function fetchMockWeather(airfieldKey) {
     return variations[airfieldKey.length % variations.length];
 }
 
-// Finds the runway best aligned with the wind direction
+// Finds the best runway alignment
 function calculateBestRunway(runways, windHeading) {
     if (!runways || runways.length === 0) return "N/A";
     
@@ -171,9 +200,11 @@ function loadSavedConfigOnStartup() {
         const config = JSON.parse(saved);
         document.getElementById('aircraftReg').value = config.registration || "G-IROI";
         document.getElementById('homeAirfield').value = config.homeAirfield || "";
-        document.getElementById('emptyWeight').value = config.emptyWeight || "";
-        document.getElementById('maxWeight').value = config.maxWeight || "";
+        document.getElementById('emptyWeight').value = config.emptyWeight || "275";
+        document.getElementById('maxWeight').value = config.maxWeight || "450";
     }
+    // Initialize fuel calculation on startup values
+    syncWeight('fuel', document.getElementById('fuelLoad').value);
 }
 
 // Main calculation handler
@@ -198,16 +229,16 @@ function calculateFlightSafety() {
         return;
     }
 
-    // 1. Calculate Weights
+    // Grab current slider values
     const crewWeight = parseFloat(document.getElementById('crewWeight').value) || 0;
     const baggageWeight = parseFloat(document.getElementById('baggageWeight').value) || 0;
-    const fuelWeight = parseFloat(document.getElementById('fuelWeight').value) || 0;
+    const fuelLitres = parseFloat(document.getElementById('fuelLoad').value) || 0;
+    const fuelWeight = Math.round(fuelLitres * 0.72);
     
     const totalWeight = emptyWeight + crewWeight + baggageWeight + fuelWeight;
-    document.getElementById('outTotalWeight').innerText = totalWeight + " kg (Max: " + maxWeight + " kg)";
+    document.getElementById('outTotalWeight').innerText = totalWeight + " kg (Max Limit: " + maxWeight + " kg)";
 
-    // 2. Evaluate Status (Marginal is within 20% of the remaining structural payload gap before MTOW)
-    // Or simpler: within 20% total margin under the MTOW line. Let's look at 80% to 100% capacity.
+    // Evaluate Safety Status (Marginal is defined as being within 20% of your maximum weight limit)
     let statusHTML = "";
     if (totalWeight > maxWeight) {
         statusHTML = '<span class="status-badge status-not-ok">NOT OK (Overweight)</span>';
@@ -218,7 +249,7 @@ function calculateFlightSafety() {
     }
     document.getElementById('outStatus').innerHTML = statusHTML;
 
-    // 3. Look up Airfield and Environment
+    // Look up Airfield and Environment
     const airfield = airfieldDatabase[airfieldKey];
     if (!airfield) {
         alert("Airfield not found in the database. Try using an exact code like EGBX or EGXU.");
