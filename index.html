@@ -87,6 +87,9 @@
         .slider-container input[type="range"] { flex: 1; }
         .slider-container input[type="number"] { width: 80px; text-align: center; }
 
+        .weight-limits { display: flex; gap: 10px; margin-top: 5px; }
+        .weight-limits input { flex: 1; }
+
         .range-val { float: right; color: var(--airbus-cyan); font-weight: bold; font-size: 0.9rem; }
 
         .btn-save { 
@@ -124,10 +127,10 @@
 
         /* Status Output Table Styling */
         table { width: 100%; border-collapse: collapse; font-family: monospace; font-size: 0.8rem; margin-top: 15px; }
-        th { color: var(--airbus-cyan); border-bottom: 1px solid #444; text-align: left; padding: 8px 4px; background: #1a1f26; }
         td { padding: 12px 4px; border-bottom: 1px solid #222; }
         
         .val-out { color: var(--airbus-green); font-weight: bold; }
+        .val-out.out-of-range { color: var(--airbus-red); animation: blink 1s infinite; }
         .status-text { font-weight: bold; }
         .status-ok { color: var(--airbus-green); }
         .status-caution { color: var(--airbus-amber); }
@@ -249,6 +252,24 @@
             <input type="number" id="cruiseSpeed" value="75" onchange="calculateFlightSafety()">
         </div>
 
+        <h3>Crew & Payload Limits</h3>
+
+        <div class="form-group">
+            <span class="form-label">Pilot Min / Max (kg)</span>
+            <div class="weight-limits">
+                <input type="number" id="pilotMinWeight" value="50" placeholder="Min">
+                <input type="number" id="pilotMaxWeight" value="120" placeholder="Max">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <span class="form-label">Passenger Min / Max (kg)</span>
+            <div class="weight-limits">
+                <input type="number" id="passengerMinWeight" value="50" placeholder="Min">
+                <input type="number" id="passengerMaxWeight" value="150" placeholder="Max">
+            </div>
+        </div>
+
         <h3>Environmental Coefficients</h3>
 
         <div class="form-group">
@@ -290,16 +311,16 @@
                 <div class="form-group" style="margin-top: 10px;">
                     <span class="form-label">Pilot Weight <span id="val-pilot" class="range-val">90 kg</span></span>
                     <div class="slider-container">
-                        <input type="range" id="pilotSlider" min="0" max="150" value="90" oninput="syncWeight('pilot', this.value)">
-                        <input type="number" id="pilotWeight" min="0" max="150" value="90" oninput="syncWeight('pilot', this.value)">
+                        <input type="range" id="pilotSlider" min="50" max="120" value="90" oninput="syncWeight('pilot', this.value)">
+                        <input type="number" id="pilotWeight" min="50" max="120" value="90" oninput="syncWeight('pilot', this.value)">
                     </div>
                 </div>
 
                 <div class="form-group">
                     <span class="form-label">Passenger Weight <span id="val-passenger" class="range-val">0 kg</span></span>
                     <div class="slider-container">
-                        <input type="range" id="passengerSlider" min="0" max="150" value="0" oninput="syncWeight('passenger', this.value)">
-                        <input type="number" id="passengerWeight" min="0" max="150" value="0" oninput="syncWeight('passenger', this.value)">
+                        <input type="range" id="passengerSlider" min="50" max="150" value="0" oninput="syncWeight('passenger', this.value)">
+                        <input type="number" id="passengerWeight" min="50" max="150" value="0" oninput="syncWeight('passenger', this.value)">
                     </div>
                 </div>
 
@@ -326,12 +347,6 @@
         <div class="panel-box status-panel">
             <div class="label">COMPUTATION MATRIX</div>
             <table>
-                <thead>
-                    <tr>
-                     //   <th>PARAMETER</th>
-                     //   <th>VALUE</th>
-                    </tr>
-                </thead>
                 <tbody>
                     <tr>
                         <td>AIRCRAFT ID</td>
@@ -413,7 +428,11 @@ const aircraftProfiles = {
         maxPower: 100,
         sltod: 120,
         slroc: 500,
-        cruiseSpeed: 75
+        cruiseSpeed: 75,
+        pilotMinWeight: 50,
+        pilotMaxWeight: 120,
+        passengerMinWeight: 50,
+        passengerMaxWeight: 150
     },
     cavalon_914: {
         model: "Cavalon 914 Turbo",
@@ -423,7 +442,11 @@ const aircraftProfiles = {
         maxPower: 115,
         sltod: 140,
         slroc: 520,
-        cruiseSpeed: 80
+        cruiseSpeed: 80,
+        pilotMinWeight: 45,
+        pilotMaxWeight: 135,
+        passengerMinWeight: 45,
+        passengerMaxWeight: 165
     },
     cavalon_pro_914: {
         model: "Cavalon Pro 914 Turbo",
@@ -433,7 +456,11 @@ const aircraftProfiles = {
         maxPower: 115,
         sltod: 135,
         slroc: 540,
-        cruiseSpeed: 85
+        cruiseSpeed: 85,
+        pilotMinWeight: 45,
+        pilotMaxWeight: 140,
+        passengerMinWeight: 45,
+        passengerMaxWeight: 170
     }
 };
 
@@ -467,8 +494,30 @@ function loadAircraftProfile(profileKey) {
     document.getElementById('sltod').value = profile.sltod;
     document.getElementById('slroc').value = profile.slroc;
     document.getElementById('cruiseSpeed').value = profile.cruiseSpeed;
+    document.getElementById('pilotMinWeight').value = profile.pilotMinWeight;
+    document.getElementById('pilotMaxWeight').value = profile.pilotMaxWeight;
+    document.getElementById('passengerMinWeight').value = profile.passengerMinWeight;
+    document.getElementById('passengerMaxWeight').value = profile.passengerMaxWeight;
     
+    updateWeightLimits();
     calculateFlightSafety();
+}
+
+function updateWeightLimits() {
+    const pilotMin = parseInt(document.getElementById('pilotMinWeight').value) || 50;
+    const pilotMax = parseInt(document.getElementById('pilotMaxWeight').value) || 120;
+    const passengerMin = parseInt(document.getElementById('passengerMinWeight').value) || 50;
+    const passengerMax = parseInt(document.getElementById('passengerMaxWeight').value) || 150;
+    
+    document.getElementById('pilotSlider').min = pilotMin;
+    document.getElementById('pilotSlider').max = pilotMax;
+    document.getElementById('pilotWeight').min = pilotMin;
+    document.getElementById('pilotWeight').max = pilotMax;
+    
+    document.getElementById('passengerSlider').min = passengerMin;
+    document.getElementById('passengerSlider').max = passengerMax;
+    document.getElementById('passengerWeight').min = passengerMin;
+    document.getElementById('passengerWeight').max = passengerMax;
 }
 
 function syncWeight(type, value) {
@@ -554,6 +603,10 @@ function saveConfiguration() {
         sltod: parseFloat(document.getElementById('sltod').value) || 120,
         slroc: parseFloat(document.getElementById('slroc').value) || 500,
         cruiseSpeed: parseFloat(document.getElementById('cruiseSpeed').value) || 75,
+        pilotMinWeight: parseFloat(document.getElementById('pilotMinWeight').value) || 50,
+        pilotMaxWeight: parseFloat(document.getElementById('pilotMaxWeight').value) || 120,
+        passengerMinWeight: parseFloat(document.getElementById('passengerMinWeight').value) || 50,
+        passengerMaxWeight: parseFloat(document.getElementById('passengerMaxWeight').value) || 150,
         daMultiplier: parseFloat(document.getElementById('daMultiplier').value) || 0.10,
         headwindBenefit: parseFloat(document.getElementById('headwindBenefit').value) || 1.5,
         tailwindPenalty: parseFloat(document.getElementById('tailwindPenalty').value) || 4.0,
@@ -587,6 +640,10 @@ function loadSavedConfigOnStartup() {
         document.getElementById('sltod').value = config.sltod || 120;
         document.getElementById('slroc').value = config.slroc || 500;
         document.getElementById('cruiseSpeed').value = config.cruiseSpeed || 75;
+        document.getElementById('pilotMinWeight').value = config.pilotMinWeight || 50;
+        document.getElementById('pilotMaxWeight').value = config.pilotMaxWeight || 120;
+        document.getElementById('passengerMinWeight').value = config.passengerMinWeight || 50;
+        document.getElementById('passengerMaxWeight').value = config.passengerMaxWeight || 150;
         document.getElementById('daMultiplier').value = config.daMultiplier || 0.10;
         document.getElementById('headwindBenefit').value = config.headwindBenefit || 1.5;
         document.getElementById('tailwindPenalty').value = config.tailwindPenalty || 4.0;
@@ -595,6 +652,8 @@ function loadSavedConfigOnStartup() {
     } else {
         document.getElementById('outReg').innerText = "G-IROI";
     }
+    
+    updateWeightLimits();
     syncWeight('pilot', document.getElementById('pilotWeight').value);
     syncWeight('passenger', document.getElementById('passengerWeight').value);
     syncWeight('baggage', document.getElementById('baggageWeight').value);
@@ -644,6 +703,9 @@ async function calculateFlightSafety() {
     const totalWeight = emptyWeight + pilotWeight + passengerWeight + baggageWeight + fuelWeight;
     const payloadWeight = pilotWeight + passengerWeight + baggageWeight + fuelWeight;
     
+    // Check if total weight is out of range
+    const totalWeightOutOfRange = totalWeight > maxWeight;
+    document.getElementById('outTotalWeight').classList.toggle('out-of-range', totalWeightOutOfRange);
     document.getElementById('outTotalWeight').innerText = totalWeight + " kg / " + maxWeight + " kg";
     document.getElementById('outFuelWeight').innerText = fuelWeight + " kg";
 
@@ -713,6 +775,8 @@ async function calculateFlightSafety() {
         
         // Apply safety factor
         let requiredRunway = Math.round(adjustedTod * safetyFactor);
+        const runwayOutOfRange = requiredRunway > 1500;
+        runwayReqElement.classList.toggle('out-of-range', runwayOutOfRange);
         runwayReqElement.innerText = requiredRunway + " Meters";
 
         // 6. Rate of Climb Degradation
@@ -752,6 +816,7 @@ async function calculateFlightSafety() {
         document.getElementById('outRunways').innerText = "--";
         document.getElementById('dens-alt').innerText = "--";
         document.getElementById('hw-comp').innerText = "--";
+        runwayReqElement.classList.remove('out-of-range');
         runwayReqElement.innerText = "N/A";
         
         // Fallback checks if airfield isn't found
