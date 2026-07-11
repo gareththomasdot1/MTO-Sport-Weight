@@ -74,10 +74,13 @@
         .form-group { margin-bottom: 20px; }
         .form-label { display: block; color: #aaa; font-size: 0.8rem; margin-bottom: 5px; text-transform: uppercase; font-weight: bold; }
         
-        input[type="text"], input[type="number"] { 
+        input[type="text"], input[type="number"], select { 
             width: 100%; background: #000; color: var(--airbus-green); border: 1px solid #444; 
             padding: 8px; font-family: monospace; font-size: 0.9rem; box-sizing: border-box; border-radius: 4px;
         }
+        select { cursor: pointer; }
+        select option { background: #000; color: var(--airbus-green); }
+        
         input[type="range"] { width: 100%; accent-color: var(--airbus-cyan); cursor: pointer; }
         
         .slider-container { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
@@ -127,7 +130,7 @@
         .val-out { color: var(--airbus-green); font-weight: bold; }
         .status-text { font-weight: bold; }
         .status-ok { color: var(--airbus-green); }
-        .status-marginal { color: var(--airbus-amber); }
+        .status-caution { color: var(--airbus-amber); }
         .status-not-ok { color: var(--airbus-red); animation: blink 1s infinite; }
 
         /* Action Buttons */
@@ -176,6 +179,19 @@
     <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
     <div class="sidebar-content">
         <h2>SYSTEM CONFIG</h2>
+        
+        <h3>Aircraft Profile</h3>
+
+        <div class="form-group">
+            <span class="form-label">Load Preset Profile</span>
+            <select id="profileSelect" onchange="loadAircraftProfile(this.value)">
+                <option value="">-- Select Profile --</option>
+                <option value="mto_914_turbo">MTO-Sport 914 Turbo</option>
+                <option value="cavalon_914">Cavalon 914 Turbo</option>
+                <option value="cavalon_pro_914">Cavalon Pro 914 Turbo</option>
+                <option value="custom">Custom</option>
+            </select>
+        </div>
         
         <h3>Aircraft Identity</h3>
         
@@ -387,6 +403,40 @@
 </div>
 
 <script>
+// Aircraft Profile Presets
+const aircraftProfiles = {
+    mto_914_turbo: {
+        model: "MTO-Sport 914 Turbo",
+        emptyWeight: 275,
+        maxWeight: 450,
+        maxUsefulLoad: 175,
+        maxPower: 100,
+        sltod: 120,
+        slroc: 500,
+        cruiseSpeed: 75
+    },
+    cavalon_914: {
+        model: "Cavalon 914 Turbo",
+        emptyWeight: 320,
+        maxWeight: 544,
+        maxUsefulLoad: 224,
+        maxPower: 115,
+        sltod: 140,
+        slroc: 520,
+        cruiseSpeed: 80
+    },
+    cavalon_pro_914: {
+        model: "Cavalon Pro 914 Turbo",
+        emptyWeight: 340,
+        maxWeight: 570,
+        maxUsefulLoad: 230,
+        maxPower: 115,
+        sltod: 135,
+        slroc: 540,
+        cruiseSpeed: 85
+    }
+};
+
 // Enhanced Database with coordinates and elevations (in meters) to allow real API calls
 const airfieldDatabase = {
     "EGXU": { name: "Rufforth East", runways: ["05", "23"], lat: 53.953, lon: -1.166, elev: 16 },
@@ -402,6 +452,24 @@ let lastCoords = "";
 
 function openNav() { document.getElementById("mySidebar").style.width = "350px"; }
 function closeNav() { document.getElementById("mySidebar").style.width = "0"; }
+
+function loadAircraftProfile(profileKey) {
+    if (!profileKey || profileKey === "custom") return;
+    
+    const profile = aircraftProfiles[profileKey];
+    if (!profile) return;
+    
+    document.getElementById('aircraftModel').value = profile.model;
+    document.getElementById('emptyWeight').value = profile.emptyWeight;
+    document.getElementById('maxWeight').value = profile.maxWeight;
+    document.getElementById('maxUsefulLoad').value = profile.maxUsefulLoad;
+    document.getElementById('maxPower').value = profile.maxPower;
+    document.getElementById('sltod').value = profile.sltod;
+    document.getElementById('slroc').value = profile.slroc;
+    document.getElementById('cruiseSpeed').value = profile.cruiseSpeed;
+    
+    calculateFlightSafety();
+}
 
 function syncWeight(type, value) {
     let numVal = parseInt(value) || 0;
@@ -666,13 +734,13 @@ async function calculateFlightSafety() {
             finalStatusHtml = '<span class="status-text status-not-ok">NOT OK (CLB LIMIT)</span>';
             statusReason = `Climb rate degraded to ${estimatedRoc}ft/min`;
         } else if (totalWeight >= (maxWeight * 0.90)) {
-            finalStatusHtml = '<span class="status-text status-marginal">MARGINAL</span>';
+            finalStatusHtml = '<span class="status-text status-caution">CAUTION</span>';
             statusReason = `Weight @ ${(totalWeight/maxWeight*100).toFixed(1)}% of limit`;
         } else if (requiredRunway > 1000) {
-            finalStatusHtml = '<span class="status-text status-marginal">MARGINAL</span>';
+            finalStatusHtml = '<span class="status-text status-caution">CAUTION</span>';
             statusReason = `Runway requirement ${requiredRunway}m`;
         } else if (estimatedRoc < 300) {
-            finalStatusHtml = '<span class="status-text status-marginal">MARGINAL</span>';
+            finalStatusHtml = '<span class="status-text status-caution">CAUTION</span>';
             statusReason = `Climb rate ${estimatedRoc}ft/min`;
         } else {
             finalStatusHtml = '<span class="status-text status-ok">OK</span>';
@@ -690,7 +758,7 @@ async function calculateFlightSafety() {
         if (totalWeight > maxWeight) {
             finalStatusHtml = '<span class="status-text status-not-ok">NOT OK (OVERWEIGHT)</span>';
         } else if (totalWeight >= (maxWeight * 0.85)) {
-            finalStatusHtml = '<span class="status-text status-marginal">MARGINAL</span>';
+            finalStatusHtml = '<span class="status-text status-caution">CAUTION</span>';
         } else {
             finalStatusHtml = '<span class="status-text status-ok">OK</span>';
         }
