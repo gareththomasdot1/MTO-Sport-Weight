@@ -118,15 +118,13 @@
 
         .panel-box { background: black; border: 1px solid #444; position: relative; border-radius: 4px; display: flex; flex-direction: column; padding: 15px; overflow-y: auto; }
         .label { 
-            position: absolute; top: 5px; left: 5px; z-index: 1000; 
-            background: rgba(0,0,0,0.8); color: var(--airbus-cyan); 
-            padding: 2px 5px; font-size: 0.6rem; border: 1px solid var(--airbus-cyan); font-family: monospace;
+            display: none;
         }
 
-        .calc-content { margin-top: 15px; }
+        .calc-content { margin-top: 0px; }
 
         /* Status Output Table Styling */
-        table { width: 100%; border-collapse: collapse; font-family: monospace; font-size: 0.8rem; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; font-family: monospace; font-size: 0.8rem; margin-top: 0px; }
         td { padding: 12px 4px; border-bottom: 1px solid #222; }
         
         .val-out { color: var(--airbus-green); font-weight: bold; }
@@ -306,13 +304,11 @@
 
     <div class="main-view">
         <div class="panel-box calculator-panel">
-            <div class="label">LOADING PARAMETERS</div>
             <div class="calc-content">
                 <div class="form-group" style="margin-top: 10px;">
                     <span class="form-label">Pilot Weight <span id="val-pilot" class="range-val">90 kg</span></span>
                     <div class="slider-container">
                         <input type="range" id="pilotSlider" min="50" max="120" value="90" oninput="syncWeight('pilot', this.value)">
-                        <input type="number" id="pilotWeight" min="50" max="120" value="90" oninput="syncWeight('pilot', this.value)">
                     </div>
                 </div>
 
@@ -320,7 +316,6 @@
                     <span class="form-label">Passenger Weight <span id="val-passenger" class="range-val">0 kg</span></span>
                     <div class="slider-container">
                         <input type="range" id="passengerSlider" min="50" max="150" value="0" oninput="syncWeight('passenger', this.value)">
-                        <input type="number" id="passengerWeight" min="50" max="150" value="0" oninput="syncWeight('passenger', this.value)">
                     </div>
                 </div>
 
@@ -328,7 +323,6 @@
                     <span class="form-label">Baggage Weight <span id="val-baggage" class="range-val">0 kg</span></span>
                     <div class="slider-container">
                         <input type="range" id="baggageSlider" min="0" max="50" value="0" oninput="syncWeight('baggage', this.value)">
-                        <input type="number" id="baggageWeight" min="0" max="50" value="0" oninput="syncWeight('baggage', this.value)">
                     </div>
                 </div>
 
@@ -336,7 +330,6 @@
                     <span class="form-label">Fuel Load <span id="val-fuel" class="range-val">40 L</span></span>
                     <div class="slider-container">
                         <input type="range" id="fuelSlider" min="0" max="100" value="40" oninput="syncWeight('fuel', this.value)">
-                        <input type="number" id="fuelLoad" min="0" max="100" value="40" oninput="syncWeight('fuel', this.value)">
                     </div>
                 </div>
 
@@ -345,7 +338,6 @@
         </div>
 
         <div class="panel-box status-panel">
-            <div class="label">COMPUTATION MATRIX</div>
             <table>
                 <tbody>
                     <tr>
@@ -511,13 +503,9 @@ function updateWeightLimits() {
     
     document.getElementById('pilotSlider').min = pilotMin;
     document.getElementById('pilotSlider').max = pilotMax;
-    document.getElementById('pilotWeight').min = pilotMin;
-    document.getElementById('pilotWeight').max = pilotMax;
     
     document.getElementById('passengerSlider').min = passengerMin;
     document.getElementById('passengerSlider').max = passengerMax;
-    document.getElementById('passengerWeight').min = passengerMin;
-    document.getElementById('passengerWeight').max = passengerMax;
 }
 
 function syncWeight(type, value) {
@@ -525,19 +513,15 @@ function syncWeight(type, value) {
     
     if (type === 'pilot') {
         document.getElementById('pilotSlider').value = numVal;
-        document.getElementById('pilotWeight').value = numVal;
         document.getElementById('val-pilot').innerText = numVal + " kg";
     } else if (type === 'passenger') {
         document.getElementById('passengerSlider').value = numVal;
-        document.getElementById('passengerWeight').value = numVal;
         document.getElementById('val-passenger').innerText = numVal + " kg";
     } else if (type === 'baggage') {
         document.getElementById('baggageSlider').value = numVal;
-        document.getElementById('baggageWeight').value = numVal;
         document.getElementById('val-baggage').innerText = numVal + " kg";
     } else if (type === 'fuel') {
         document.getElementById('fuelSlider').value = numVal;
-        document.getElementById('fuelLoad').value = numVal;
         document.getElementById('val-fuel').innerText = numVal + " L";
     }
     
@@ -616,13 +600,20 @@ function saveConfiguration() {
     localStorage.setItem('aircraftConfig', JSON.stringify(config));
     
     const btn = document.getElementById("btn-save");
-    btn.innerText = "SETTINGS SAVED!";
-    setTimeout(() => { 
-        btn.innerText = "SAVE & APPLY"; 
-        closeNav(); 
-    }, 800);
+    btn.innerText = "✓ SETTINGS SAVED!";
+    btn.style.borderColor = "var(--airbus-green)";
+    btn.style.color = "var(--airbus-green)";
     
+    setTimeout(() => { 
+        btn.innerText = "SAVE & APPLY";
+        btn.style.borderColor = "var(--airbus-cyan)";
+        btn.style.color = "var(--airbus-cyan)";
+        closeNav(); 
+    }, 1200);
+    
+    // Update all UI elements immediately
     document.getElementById('outReg').innerText = config.registration;
+    updateWeightLimits();
     calculateFlightSafety();
 }
 
@@ -654,10 +645,10 @@ function loadSavedConfigOnStartup() {
     }
     
     updateWeightLimits();
-    syncWeight('pilot', document.getElementById('pilotWeight').value);
-    syncWeight('passenger', document.getElementById('passengerWeight').value);
-    syncWeight('baggage', document.getElementById('baggageWeight').value);
-    syncWeight('fuel', document.getElementById('fuelLoad').value);
+    syncWeight('pilot', document.getElementById('pilotSlider').value);
+    syncWeight('passenger', document.getElementById('passengerSlider').value);
+    syncWeight('baggage', document.getElementById('baggageSlider').value);
+    syncWeight('fuel', document.getElementById('fuelSlider').value);
     
     calculateFlightSafety();
 }
@@ -694,10 +685,10 @@ async function calculateFlightSafety() {
     const tailwindPenalty = config.tailwindPenalty;
     const safetyFactor = config.safetyFactor;
 
-    const pilotWeight = parseFloat(document.getElementById('pilotWeight').value) || 0;
-    const passengerWeight = parseFloat(document.getElementById('passengerWeight').value) || 0;
-    const baggageWeight = parseFloat(document.getElementById('baggageWeight').value) || 0;
-    const fuelLitres = parseFloat(document.getElementById('fuelLoad').value) || 0;
+    const pilotWeight = parseFloat(document.getElementById('pilotSlider').value) || 0;
+    const passengerWeight = parseFloat(document.getElementById('passengerSlider').value) || 0;
+    const baggageWeight = parseFloat(document.getElementById('baggageSlider').value) || 0;
+    const fuelLitres = parseFloat(document.getElementById('fuelSlider').value) || 0;
     const fuelWeight = Math.round(fuelLitres * 0.72);
     
     const totalWeight = emptyWeight + pilotWeight + passengerWeight + baggageWeight + fuelWeight;
