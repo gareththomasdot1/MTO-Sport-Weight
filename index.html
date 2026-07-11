@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#00f2ff">
+    <meta name="description" content="Aircraft Performance & Airfield Calculator - Concept only, not for flight purposes">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%230b0e14' width='192' height='192'/><text x='50%' y='50%' font-size='80' font-weight='bold' fill='%2300f2ff' text-anchor='middle' dominant-baseline='central' font-family='monospace'>APC</text></svg>">
     <title>Aircraft Performance & Airfield Calculator</title>
     <style>
         :root {
@@ -50,11 +54,101 @@
         .app-title { font-weight: bold; color: #fff; font-size: 0.9rem; letter-spacing: 0.5px; display: flex; align-items: center; gap: 10px; }
         .header-right { display: flex; align-items: center; gap: 15px; }
 
-        #btn-config {
+        #btn-config, #btn-help {
             background: transparent; border: none; color: #666; cursor: pointer; font-size: 1.2rem;
             transition: color 0.3s; padding: 0 5px;
         }
-        #btn-config:hover { color: var(--airbus-cyan); }
+        #btn-config:hover, #btn-help:hover { color: var(--airbus-cyan); }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 3000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal.active { display: flex; }
+        
+        .modal-content {
+            background-color: var(--sidebar-bg);
+            padding: 30px;
+            border: 2px solid var(--airbus-cyan);
+            border-radius: 8px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0, 242, 255, 0.1);
+        }
+        
+        .modal-content h2 {
+            color: var(--airbus-cyan);
+            margin-top: 0;
+            border-bottom: 2px solid var(--airbus-cyan);
+            padding-bottom: 15px;
+        }
+        
+        .modal-content h3 {
+            color: var(--airbus-cyan);
+            margin-top: 20px;
+            font-size: 1rem;
+        }
+        
+        .modal-content p {
+            color: #ddd;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+        
+        .modal-content ul {
+            color: #ddd;
+            margin-left: 20px;
+        }
+        
+        .modal-content li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+            justify-content: center;
+        }
+        
+        .modal-btn {
+            padding: 12px 25px;
+            border: 1px solid var(--airbus-cyan);
+            background: #1a1f26;
+            color: var(--airbus-cyan);
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 4px;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        
+        .modal-btn:hover {
+            background: var(--airbus-cyan);
+            color: #000;
+        }
+        
+        .modal-btn.primary {
+            background: var(--airbus-cyan);
+            color: #000;
+        }
+        
+        .modal-btn.primary:hover {
+            background: #00e6ff;
+        }
 
         /* Sidebar Settings Pane */
         .sidebar {
@@ -85,7 +179,6 @@
         
         .slider-container { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
         .slider-container input[type="range"] { flex: 1; }
-        .slider-container input[type="number"] { width: 80px; text-align: center; }
 
         .weight-limits { display: flex; gap: 10px; margin-top: 5px; }
         .weight-limits input { flex: 1; }
@@ -122,6 +215,13 @@
         }
 
         .calc-content { margin-top: 0px; }
+
+        /* Scroll spacer for mobile */
+        .scroll-spacer {
+            flex-shrink: 0;
+            width: 60px;
+            min-height: 0;
+        }
 
         /* Status Output Table Styling */
         table { width: 100%; border-collapse: collapse; font-family: monospace; font-size: 0.8rem; margin-top: 0px; }
@@ -160,9 +260,10 @@
         .unit { font-size: 0.6rem; color: #666; text-transform: uppercase; margin-top: -1px; }
 
         .copyright-bar {
-            background: #000; color: #444; font-size: 8px; text-align: center; 
-            padding: 2px 0; font-family: sans-serif; border-top: 1px solid #111;
+            background: #000; color: var(--airbus-red); font-size: 10px; text-align: center; 
+            padding: 4px; font-family: monospace; border-top: 1px solid #111;
             flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            font-weight: bold; letter-spacing: 0.5px;
         }
 
         @keyframes blink { 50% { opacity: 0.4; } }
@@ -174,6 +275,102 @@
     <div class="icon">&#8635;</div>
     <h1>ROTATE DEVICE</h1>
     <p>Please use landscape mode<br>for optimal viewing.</p>
+</div>
+
+<!-- Disclaimer Modal -->
+<div id="disclaimerModal" class="modal active">
+    <div class="modal-content">
+        <h2>⚠ DISCLAIMER</h2>
+        <p style="color: var(--airbus-red); font-weight: bold; font-size: 1.1rem; margin: 20px 0;">
+            CONCEPT ONLY. NOT FOR FLIGHT PURPOSES.
+        </p>
+        <p>
+            This is a <strong>conceptual tool</strong> for educational purposes only. 
+            <strong>Do NOT use this for actual flight planning or performance calculations.</strong>
+        </p>
+        <p>
+            This application provides rough estimates based on simplified models. 
+            Real aircraft performance depends on many factors not accounted for here, including:
+        </p>
+        <ul>
+            <li>Precise aircraft weight and balance data</li>
+            <li>Actual runway surface conditions</li>
+            <li>Precise atmospheric data</li>
+            <li>Pilot experience and technique</li>
+            <li>Aircraft maintenance status</li>
+            <li>Regulatory requirements</li>
+        </ul>
+        <p>
+            <strong>Always consult official aircraft manuals, weight & balance sheets, 
+            and applicable regulations before any flight operation.</strong>
+        </p>
+        <div class="modal-buttons">
+            <button class="modal-btn primary" onclick="acceptDisclaimer()">ACCEPT & CONTINUE</button>
+        </div>
+    </div>
+</div>
+
+<!-- Help Modal -->
+<div id="helpModal" class="modal">
+    <div class="modal-content">
+        <h2>HELP & INFORMATION</h2>
+        
+        <h3>What Does This App Do?</h3>
+        <p>
+            This is a conceptual flight performance calculator for ultralight aircraft. 
+            It estimates takeoff distance, rate of climb, and overall flight safety status 
+            based on aircraft specifications and current weather conditions.
+        </p>
+        
+        <h3>How It Works</h3>
+        <p><strong>Input Parameters:</strong></p>
+        <ul>
+            <li><strong>Pilot/Passenger Weight:</strong> Adjust weight sliders (ranges vary by aircraft profile)</li>
+            <li><strong>Baggage & Fuel:</strong> Select cargo and fuel load amounts</li>
+            <li><strong>Aircraft Profile:</strong> Choose from presets (MTO-Sport, Cavalon models) or custom values</li>
+            <li><strong>Home Airfield:</strong> Enter ICAO code to get runway info and weather</li>
+        </ul>
+        
+        <h3>Calculation Method</h3>
+        <p>The app calculates performance adjustments using:</p>
+        <ul>
+            <li><strong>Weight Factor:</strong> Payload impact on takeoff distance (quadratic scaling)</li>
+            <li><strong>Density Altitude:</strong> Pressure altitude adjusted for temperature</li>
+            <li><strong>Wind Component:</strong> Headwind benefit and tailwind penalty on runway</li>
+            <li><strong>Safety Factor:</strong> 30% multiplier on calculated distance for safety margin</li>
+        </ul>
+        
+        <h3>Safety Status Indicators</h3>
+        <ul>
+            <li><span style="color: var(--airbus-green);">✓ OK</span> - All parameters within normal limits</li>
+            <li><span style="color: var(--airbus-amber);">⚠ CAUTION</span> - Operating near limits, proceed with care</li>
+            <li><span style="color: var(--airbus-red);">✗ NOT OK</span> - Operation not recommended (overweight, insufficient runway, poor climb)</li>
+        </ul>
+        
+        <h3>Key Limitations</h3>
+        <ul>
+            <li>This is a <strong>simplified model</strong> - does not account for all real-world factors</li>
+            <li>Weather data is live but may have delays or inaccuracies</li>
+            <li>Runway information is limited to a database of sample airfields</li>
+            <li>Aircraft performance data are estimates and may differ from actual values</li>
+            <li><strong>NOT authorized or certified for flight planning</strong></li>
+        </ul>
+        
+        <h3>Data Sources</h3>
+        <ul>
+            <li>Weather: Open-Meteo API (real-time atmospheric data)</li>
+            <li>Aircraft Profiles: Manufacturer specifications (simplified)</li>
+            <li>Airfield Data: Manual database (limited)</li>
+        </ul>
+        
+        <p style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #444; color: var(--airbus-amber); font-weight: bold;">
+            Always consult official aircraft manuals and regulatory guidance before any flight operation.
+        </p>
+        
+        <div class="modal-buttons">
+            <button class="modal-btn primary" onclick="closeHelp()">CLOSE</button>
+        </div>
+    </div>
 </div>
 
 <div id="mySidebar" class="sidebar">
@@ -298,6 +495,7 @@
     <header>
         <div class="app-title">FLIGHT PERFORMANCE MANAGEMENT SYSTEM <span id="header-status"></span></div>
         <div class="header-right">
+            <button id="btn-help" onclick="openHelp()">?</button>
             <button id="btn-config" onclick="openNav()">&#9881;</button>
         </div>
     </header>
@@ -371,6 +569,8 @@
                 </tbody>
             </table>
         </div>
+
+        <div class="scroll-spacer"></div>
     </div>
 
     <footer>
@@ -406,10 +606,42 @@
         </div>
     </footer>
     
-    <div class="copyright-bar">&copy; Gareth Thomas. Not for navigation or safety purposes. Information from open-meteo and adsb.lol.</div>
+    <div class="copyright-bar">⚠ CONCEPT ONLY - NOT FOR FLIGHT PURPOSES ⚠</div>
 </div>
 
 <script>
+// Register Service Worker for PWA
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js').catch((error) => {
+            console.log('Service Worker registration failed:', error);
+        });
+    });
+}
+
+// Disclaimer management
+function acceptDisclaimer() {
+    localStorage.setItem('disclaimerAccepted', 'true');
+    document.getElementById('disclaimerModal').classList.remove('active');
+}
+
+function checkDisclaimer() {
+    if (!localStorage.getItem('disclaimerAccepted')) {
+        document.getElementById('disclaimerModal').classList.add('active');
+    } else {
+        document.getElementById('disclaimerModal').classList.remove('active');
+    }
+}
+
+// Help modal management
+function openHelp() {
+    document.getElementById('helpModal').classList.add('active');
+}
+
+function closeHelp() {
+    document.getElementById('helpModal').classList.remove('active');
+}
+
 // Aircraft Profile Presets
 const aircraftProfiles = {
     mto_914_turbo: {
@@ -825,7 +1057,10 @@ async function calculateFlightSafety() {
     titleStatusElement.innerHTML = "- " + finalStatusHtml;
 }
 
-window.onload = loadSavedConfigOnStartup;
+window.addEventListener('load', () => {
+    loadSavedConfigOnStartup();
+    checkDisclaimer();
+});
 </script>
 
 </body>
