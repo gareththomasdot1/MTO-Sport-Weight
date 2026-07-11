@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#00f2ff">
@@ -493,7 +495,7 @@
 
 <div id="main" class="dashboard">
     <header>
-        <div class="app-title">FLIGHT PERFORMANCE MANAGEMENT SYSTEM <span id="header-status"></span></div>
+        <div class="app-title">FLIGHT PERFORMANCE MANAGEMENT SYSTEM v1.0<span id="header-status"></span></div>
         <div class="header-right">
             <button id="btn-help" onclick="openHelp()">?</button>
             <button id="btn-config" onclick="openNav()">&#9881;</button>
@@ -653,10 +655,10 @@ const aircraftProfiles = {
         sltod: 120,
         slroc: 500,
         cruiseSpeed: 75,
-        pilotMinWeight: 50,
+        pilotMinWeight: 60,
         pilotMaxWeight: 120,
-        passengerMinWeight: 50,
-        passengerMaxWeight: 150
+        passengerMinWeight: 0,
+        passengerMaxWeight: 129
     },
     cavalon_914: {
         model: "Cavalon 914 Turbo",
@@ -690,12 +692,20 @@ const aircraftProfiles = {
 
 // Enhanced Database with coordinates and elevations (in meters) to allow real API calls
 const airfieldDatabase = {
-    "EGXU": { name: "Rufforth East", runways: ["05", "23"], lat: 53.953, lon: -1.166, elev: 16 },
-    "RUFFORTH EAST": { name: "Rufforth East", runways: ["05", "23"], lat: 53.953, lon: -1.166, elev: 16 },
-    "EGBX": { name: "Woburn Park", runways: ["12", "30"], lat: 51.989, lon: -0.618, elev: 95 },
-    "WOBURN PARK": { name: "Woburn Park", runways: ["12", "30"], lat: 51.989, lon: -0.618, elev: 95 },
-    "EGCA": { name: "Caernarfon", runways: ["07", "25", "02", "20"], lat: 53.103, lon: -4.332, elev: 4 },
-    "CAERNARFON": { name: "Caernarfon", runways: ["07", "25", "02", "20"], lat: 53.103, lon: -4.332, elev: 4 }
+   "GB-0248": { name: "Rufforth East", runways: ["05", "23"], lat: 53.953, lon: -1.181, elev: 65 },
+    "RUFFORTH EAST": { name: "Rufforth East", runways: ["05", "23"], lat: 53.953, lon: -1.181, elev: 65 },
+    "EGNM": { name: "Leeds Bradford", runways: ["14", "32"], lat: 53.866, lon: -1.661, elev: 681 },
+    "LEEDS BRADFORD": { name: "Leeds Bradford", runways: ["14", "32"], lat: 53.866, lon: -1.661, elev: 681 },
+    "EGXU": { name: "RAF Linton-on-Ouse", runways: ["04", "22"], lat: 54.049, lon: -1.253, elev: 52 },
+    "RAF LINTON-ON-OUSE": { name: "RAF Linton-on-Ouse", runways: ["04", "22"], lat: 54.049, lon: -1.253, elev: 52 },
+    "EGCJ": { name: "Sherburn in Elmet", runways: ["11", "29", "06", "24", "01", "19"], lat: 53.784, lon: -1.218, elev: 26 },
+    "SHERBURN IN ELMET": { name: "Sherburn in Elmet", runways: ["11", "29", "06", "24", "01", "19"], lat: 53.784, lon: -1.218, elev: 26 },
+    "GB-0075": { name: "Elvington", runways: ["08", "26"], lat: 53.923, lon: -0.993, elev: 48 },
+    "ELVINGTON": { name: "Elvington", runways: ["08", "26"], lat: 53.923, lon: -0.993, elev: 48 },
+    "EGBR": { name: "Breighton", runways: ["10", "28"], lat: 53.803, lon: -0.914, elev: 20 },
+    "BREIGHTON": { name: "Breighton", runways: ["10", "28"], lat: 53.803, lon: -0.914, elev: 20 },
+    "EGXE": { name: "RAF Leeming", runways: ["16", "34"], lat: 54.297, lon: -1.539, elev: 132 },
+    "RAF LEEMING": { name: "RAF Leeming", runways: ["16", "34"], lat: 54.297, lon: -1.539, elev: 132 }
 };
 
 let cachedWeather = null;
@@ -730,8 +740,8 @@ function loadAircraftProfile(profileKey) {
 function updateWeightLimits() {
     const pilotMin = parseInt(document.getElementById('pilotMinWeight').value) || 50;
     const pilotMax = parseInt(document.getElementById('pilotMaxWeight').value) || 120;
-    const passengerMin = parseInt(document.getElementById('passengerMinWeight').value) || 50;
-    const passengerMax = parseInt(document.getElementById('passengerMaxWeight').value) || 150;
+    const passengerMin = parseInt(document.getElementById('passengerMinWeight').value) || 0;
+    const passengerMax = parseInt(document.getElementById('passengerMaxWeight').value) || 129;
     
     document.getElementById('pilotSlider').min = pilotMin;
     document.getElementById('pilotSlider').max = pilotMax;
@@ -819,10 +829,10 @@ function saveConfiguration() {
         sltod: parseFloat(document.getElementById('sltod').value) || 120,
         slroc: parseFloat(document.getElementById('slroc').value) || 500,
         cruiseSpeed: parseFloat(document.getElementById('cruiseSpeed').value) || 75,
-        pilotMinWeight: parseFloat(document.getElementById('pilotMinWeight').value) || 50,
+        pilotMinWeight: parseFloat(document.getElementById('pilotMinWeight').value) || 60,
         pilotMaxWeight: parseFloat(document.getElementById('pilotMaxWeight').value) || 120,
-        passengerMinWeight: parseFloat(document.getElementById('passengerMinWeight').value) || 50,
-        passengerMaxWeight: parseFloat(document.getElementById('passengerMaxWeight').value) || 150,
+        passengerMinWeight: parseFloat(document.getElementById('passengerMinWeight').value) || 0,
+        passengerMaxWeight: parseFloat(document.getElementById('passengerMaxWeight').value) || 129,
         daMultiplier: parseFloat(document.getElementById('daMultiplier').value) || 0.10,
         headwindBenefit: parseFloat(document.getElementById('headwindBenefit').value) || 1.5,
         tailwindPenalty: parseFloat(document.getElementById('tailwindPenalty').value) || 4.0,
@@ -865,8 +875,8 @@ function loadSavedConfigOnStartup() {
         document.getElementById('cruiseSpeed').value = config.cruiseSpeed || 75;
         document.getElementById('pilotMinWeight').value = config.pilotMinWeight || 50;
         document.getElementById('pilotMaxWeight').value = config.pilotMaxWeight || 120;
-        document.getElementById('passengerMinWeight').value = config.passengerMinWeight || 50;
-        document.getElementById('passengerMaxWeight').value = config.passengerMaxWeight || 150;
+        document.getElementById('passengerMinWeight').value = config.passengerMinWeight || 0;
+        document.getElementById('passengerMaxWeight').value = config.passengerMaxWeight || 129;
         document.getElementById('daMultiplier').value = config.daMultiplier || 0.10;
         document.getElementById('headwindBenefit').value = config.headwindBenefit || 1.5;
         document.getElementById('tailwindPenalty').value = config.tailwindPenalty || 4.0;
