@@ -50,11 +50,11 @@
         .app-title { font-weight: bold; color: #fff; font-size: 0.9rem; letter-spacing: 0.5px; display: flex; align-items: center; gap: 10px; }
         .header-right { display: flex; align-items: center; gap: 15px; }
 
-        .icon-btn {
+        #btn-config {
             background: transparent; border: none; color: #666; cursor: pointer; font-size: 1.2rem;
-            transition: color 0.3s; padding: 0 5px; font-weight: bold;
+            transition: color 0.3s; padding: 0 5px;
         }
-        .icon-btn:hover { color: var(--airbus-cyan); }
+        #btn-config:hover { color: var(--airbus-cyan); }
 
         /* Sidebar Settings Pane */
         .sidebar {
@@ -67,6 +67,7 @@
         }
         .sidebar-content { padding: 20px; width: 100%; box-sizing: border-box; padding-bottom: 100px; }
         .sidebar h2 { color: var(--airbus-cyan); font-size: 1.2rem; margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .sidebar h3 { color: #999; font-size: 0.9rem; margin-top: 20px; margin-bottom: 10px; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 5px; }
         .closebtn { position: absolute; top: 10px; right: 20px; font-size: 2rem; color: #888; text-decoration: none; }
         .closebtn:hover { color: #fff; }
 
@@ -82,8 +83,8 @@
         .slider-container { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
         .slider-container input[type="range"] { flex: 1; }
         .slider-container input[type="number"] { width: 80px; text-align: center; }
-        
-        .split-inputs { display: flex; gap: 10px; }
+
+        .range-val { float: right; color: var(--airbus-cyan); font-weight: bold; font-size: 0.9rem; }
 
         .btn-save { 
             width: 100%; padding: 12px; background: var(--btn-active); color: var(--airbus-cyan); 
@@ -93,61 +94,165 @@
         .btn-save:hover { background: #445; }
 
         /* Main Workspace Panels */
-        .main-view { display: flex; flex: 1 1 auto; min-height: 0; gap: 5px; padding: 5px; overflow: hidden; width: 100%; box-sizing: border-box; }
+        .main-view { 
+            display: flex; 
+            flex: 1 1 auto; 
+            min-height: 0; 
+            gap: 5px; 
+            padding: 5px; 
+            overflow: hidden; 
+            width: 100%;
+            box-sizing: border-box;
+        }
 
-        @media (orientation: landscape) { .calculator-panel { flex: 1.5; } .status-panel { flex: 1; } }
+        @media (orientation: landscape) {
+            .calculator-panel { flex: 1.5; }
+            .status-panel { flex: 1; }
+        }
 
         .panel-box { background: black; border: 1px solid #444; position: relative; border-radius: 4px; display: flex; flex-direction: column; padding: 15px; overflow-y: auto; }
-        .label { position: absolute; top: 5px; left: 5px; z-index: 1000; background: rgba(0,0,0,0.8); color: var(--airbus-cyan); padding: 2px 5px; font-size: 0.6rem; border: 1px solid var(--airbus-cyan); font-family: monospace; }
+        .label { 
+            position: absolute; top: 5px; left: 5px; z-index: 1000; 
+            background: rgba(0,0,0,0.8); color: var(--airbus-cyan); 
+            padding: 2px 5px; font-size: 0.6rem; border: 1px solid var(--airbus-cyan); font-family: monospace;
+        }
 
+        .calc-content { margin-top: 15px; }
+
+        /* Status Output Table Styling */
         table { width: 100%; border-collapse: collapse; font-family: monospace; font-size: 0.8rem; margin-top: 15px; }
         th { color: var(--airbus-cyan); border-bottom: 1px solid #444; text-align: left; padding: 8px 4px; background: #1a1f26; }
         td { padding: 12px 4px; border-bottom: 1px solid #222; }
         
         .val-out { color: var(--airbus-green); font-weight: bold; }
+        .status-text { font-weight: bold; }
         .status-ok { color: var(--airbus-green); }
         .status-marginal { color: var(--airbus-amber); }
         .status-not-ok { color: var(--airbus-red); animation: blink 1s infinite; }
 
-        .btn-action { width: 100%; padding: 12px; background: #1a1f26; color: var(--airbus-cyan); border: 1px solid #444; cursor: pointer; font-weight: bold; font-size: 0.9rem; border-radius: 4px; margin-top: 10px; }
+        /* Action Buttons */
+        .btn-action {
+            width: 100%; padding: 12px; background: #1a1f26; color: var(--airbus-cyan);
+            border: 1px solid #444; cursor: pointer; font-weight: bold; font-size: 0.9rem;
+            border-radius: 4px; transition: background 0.2s; margin-top: 10px;
+        }
+        .btn-action:hover { background: #252d37; border-color: var(--airbus-cyan); }
+
+        /* Footer Instrument Strip */
+        footer { 
+            height: 50px; background: #000; border-top: 2px solid var(--airbus-cyan); 
+            display: grid; grid-template-columns: repeat(6, 1fr); align-items: center; 
+            flex-shrink: 0; 
+        }
+
+        .met-item { 
+            text-align: center; border-right: 1px solid #222; height: 100%; 
+            display: flex; flex-direction: column; justify-content: center;
+        }
+        .met-item:last-child { border: none; }
         
-        footer { height: 50px; background: #000; border-top: 2px solid var(--airbus-cyan); display: grid; grid-template-columns: repeat(6, 1fr); align-items: center; flex-shrink: 0; }
-        .met-item { text-align: center; border-right: 1px solid #222; height: 100%; display: flex; flex-direction: column; justify-content: center; }
-        .met-lbl { color: #888; font-size: 0.55rem; font-weight: bold; }
-        .val { display: block; color: var(--airbus-green); font-size: 0.9rem; font-weight: bold; }
-        .unit { font-size: 0.6rem; color: #666; }
+        .met-lbl { color: #888; font-size: 0.55rem; margin-bottom: -1px; font-weight: bold; letter-spacing: 0.5px; }
+        .val { display: block; color: var(--airbus-green); font-size: 0.9rem; font-weight: bold; line-height: 1.1; font-family: monospace; }
+        .unit { font-size: 0.6rem; color: #666; text-transform: uppercase; margin-top: -1px; }
+
+        .copyright-bar {
+            background: #000; color: #444; font-size: 8px; text-align: center; 
+            padding: 2px 0; font-family: sans-serif; border-top: 1px solid #111;
+            flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
         @keyframes blink { 50% { opacity: 0.4; } }
     </style>
 </head>
 <body>
+
+<div id="rotate-msg">
+    <div class="icon">&#8635;</div>
+    <h1>ROTATE DEVICE</h1>
+    <p>Please use landscape mode<br>for optimal viewing.</p>
+</div>
 
 <div id="mySidebar" class="sidebar">
     <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
     <div class="sidebar-content">
         <h2>SYSTEM CONFIG</h2>
         
+        <h3>Aircraft Identity</h3>
+        
         <div class="form-group">
-            <span class="form-label">POH: Base Takeoff Roll (m)</span>
-            <input type="number" id="pohBaseRoll" value="150">
-        </div>
-        <div class="form-group">
-            <span class="form-label">POH: Engine Power (HP)</span>
-            <input type="number" id="pohEngineHP" value="115">
-        </div>
-        <div class="form-group">
-            <span class="form-label">POH: Best Climb Speed (Kts)</span>
-            <input type="number" id="pohClimbVy" value="60">
+            <span class="form-label">Aircraft Registration</span>
+            <input type="text" id="aircraftReg" value="G-IROI">
         </div>
 
-        <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
+        <div class="form-group">
+            <span class="form-label">Aircraft Model</span>
+            <input type="text" id="aircraftModel" value="MTO-Sport 914 Turbo" readonly>
+        </div>
+
+        <div class="form-group">
+            <span class="form-label">Home Airfield (ICAO/Name)</span>
+            <input type="text" id="homeAirfield" placeholder="e.g., EGXU" onchange="calculateFlightSafety()">
+        </div>
+
+        <h3>Structural Limits</h3>
 
         <div class="form-group">
             <span class="form-label">Aircraft Empty Weight (kg)</span>
-            <input type="number" id="emptyWeight" value="260">
+            <input type="number" id="emptyWeight" value="275" onchange="calculateFlightSafety()">
         </div>
+
         <div class="form-group">
-            <span class="form-label">Max Allowed Weight (kg)</span>
-            <input type="number" id="maxWeight" value="500">
+            <span class="form-label">Maximum Gross Weight (kg)</span>
+            <input type="number" id="maxWeight" value="450" onchange="calculateFlightSafety()">
+        </div>
+
+        <div class="form-group">
+            <span class="form-label">Maximum Useful Load (kg)</span>
+            <input type="number" id="maxUsefulLoad" value="175" onchange="calculateFlightSafety()">
+        </div>
+
+        <h3>Performance Envelope</h3>
+
+        <div class="form-group">
+            <span class="form-label">Max Cruise Power (bhp)</span>
+            <input type="number" id="maxPower" value="100" onchange="calculateFlightSafety()">
+        </div>
+
+        <div class="form-group">
+            <span class="form-label">Sea Level Takeoff Distance (m)</span>
+            <input type="number" id="sltod" value="120" onchange="calculateFlightSafety()">
+        </div>
+
+        <div class="form-group">
+            <span class="form-label">Sea Level Rate of Climb (ft/min)</span>
+            <input type="number" id="slroc" value="500" onchange="calculateFlightSafety()">
+        </div>
+
+        <div class="form-group">
+            <span class="form-label">Cruise Speed (knots)</span>
+            <input type="number" id="cruiseSpeed" value="75" onchange="calculateFlightSafety()">
+        </div>
+
+        <h3>Environmental Coefficients</h3>
+
+        <div class="form-group">
+            <span class="form-label">Takeoff Distance Multiplier / 1000ft DA</span>
+            <input type="number" id="daMultiplier" value="0.10" step="0.01" onchange="calculateFlightSafety()">
+        </div>
+
+        <div class="form-group">
+            <span class="form-label">Headwind Benefit (% per knot)</span>
+            <input type="number" id="headwindBenefit" value="1.5" step="0.1" onchange="calculateFlightSafety()">
+        </div>
+
+        <div class="form-group">
+            <span class="form-label">Tailwind Penalty (% per knot)</span>
+            <input type="number" id="tailwindPenalty" value="4.0" step="0.1" onchange="calculateFlightSafety()">
+        </div>
+
+        <div class="form-group">
+            <span class="form-label">Safety Factor Multiplier</span>
+            <input type="number" id="safetyFactor" value="1.3" step="0.1" onchange="calculateFlightSafety()">
         </div>
 
         <button id="btn-save" class="btn-save" onclick="saveConfiguration()">SAVE & APPLY</button>
@@ -156,130 +261,448 @@
 
 <div id="main" class="dashboard">
     <header>
-        <div class="app-title">PERFORMANCE CALCULATOR v4.2</div>
-        <button class="icon-btn" onclick="openNav()">&#9881;</button>
+        <div class="app-title">FLIGHT PERFORMANCE MANAGEMENT SYSTEM <span id="header-status"></span></div>
+        <div class="header-right">
+            <button id="btn-config" onclick="openNav()">&#9881;</button>
+        </div>
     </header>
 
     <div class="main-view">
         <div class="panel-box calculator-panel">
-            <div class="label">INPUTS</div>
-            <div class="form-group">
-                <span class="form-label">Pilot Weight (kg)</span>
-                <div class="slider-container">
-                    <input type="range" id="pilotSlider" min="60" max="125" value="90" oninput="syncWeight('pilot', this.value)">
-                    <input type="number" id="pilotWeight" value="90" oninput="syncWeight('pilot', this.value)">
+            <div class="label">LOADING PARAMETERS</div>
+            <div class="calc-content">
+                <div class="form-group" style="margin-top: 10px;">
+                    <span class="form-label">Pilot Weight <span id="val-pilot" class="range-val">90 kg</span></span>
+                    <div class="slider-container">
+                        <input type="range" id="pilotSlider" min="0" max="150" value="90" oninput="syncWeight('pilot', this.value)">
+                        <input type="number" id="pilotWeight" min="0" max="150" value="90" oninput="syncWeight('pilot', this.value)">
+                    </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <span class="form-label">Passenger Weight (kg)</span>
-                <div class="slider-container">
-                    <input type="range" id="passengerSlider" min="0" max="120" value="0" oninput="syncWeight('passenger', this.value)">
-                    <input type="number" id="passengerWeight" value="0" oninput="syncWeight('passenger', this.value)">
+
+                <div class="form-group">
+                    <span class="form-label">Passenger Weight <span id="val-passenger" class="range-val">0 kg</span></span>
+                    <div class="slider-container">
+                        <input type="range" id="passengerSlider" min="0" max="150" value="0" oninput="syncWeight('passenger', this.value)">
+                        <input type="number" id="passengerWeight" min="0" max="150" value="0" oninput="syncWeight('passenger', this.value)">
+                    </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <span class="form-label">Fuel (kg)</span>
-                <div class="slider-container">
-                    <input type="range" id="fuelSlider" min="0" max="70" value="40" oninput="syncWeight('fuel', this.value)">
-                    <input type="number" id="fuelLoad" value="40" oninput="syncWeight('fuel', this.value)">
+
+                <div class="form-group">
+                    <span class="form-label">Baggage Weight <span id="val-baggage" class="range-val">0 kg</span></span>
+                    <div class="slider-container">
+                        <input type="range" id="baggageSlider" min="0" max="50" value="0" oninput="syncWeight('baggage', this.value)">
+                        <input type="number" id="baggageWeight" min="0" max="50" value="0" oninput="syncWeight('baggage', this.value)">
+                    </div>
                 </div>
+
+                <div class="form-group">
+                    <span class="form-label">Fuel Load <span id="val-fuel" class="range-val">40 L</span></span>
+                    <div class="slider-container">
+                        <input type="range" id="fuelSlider" min="0" max="100" value="40" oninput="syncWeight('fuel', this.value)">
+                        <input type="number" id="fuelLoad" min="0" max="100" value="40" oninput="syncWeight('fuel', this.value)">
+                    </div>
+                </div>
+
+                <button class="btn-action" onclick="calculateFlightSafety()">FORCE RE-COMPUTE</button>
             </div>
-            <button class="btn-action" onclick="calculateFlightSafety()">RECOMPUTE</button>
         </div>
 
         <div class="panel-box status-panel">
-            <div class="label">RESULTS</div>
+            <div class="label">COMPUTATION MATRIX</div>
             <table>
-                <tr><td>TOTAL WEIGHT</td><td id="outTotalWeight" class="val-out">--</td></tr>
-                <tr><td>REQ RUNWAY</td><td id="outRunwayReq" class="val-out">--</td></tr>
-                <tr><td>STATUS</td><td id="outStatus">--</td></tr>
+                <thead>
+                    <tr>
+                     //   <th>PARAMETER</th>
+                     //   <th>VALUE</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>AIRCRAFT ID</td>
+                        <td id="outReg" class="val-out">--</td>
+                    </tr>
+                    <tr>
+                        <td>TOTAL WEIGHT</td>
+                        <td id="outTotalWeight" class="val-out">--</td>
+                    </tr>
+                    <tr>
+                        <td>FUEL MASS</td>
+                        <td id="outFuelWeight" class="val-out">--</td>
+                    </tr>
+                    <tr>
+                        <td>AIRFIELD</td>
+                        <td id="outAirfield" class="val-out">--</td>
+                    </tr>
+                    <tr>
+                        <td>RUNWAYS AVAIL</td>
+                        <td id="outRunways" class="val-out">--</td>
+                    </tr>
+                    <tr>
+                        <td>REQUIRED RUNWAY</td>
+                        <td id="outRunwayReq" class="val-out">--</td>
+                    </tr>
+                    <tr>
+                        <td>FLIGHT SAFETY STATUS</td>
+                        <td id="outStatus">--</td>
+                    </tr>
+                </tbody>
             </table>
         </div>
     </div>
 
     <footer>
-        <div class="met-item"><div class="met-lbl">DENS ALT</div><span id="dens-alt" class="val">--</span><span class="unit">FT</span></div>
-        <div class="met-item"><div class="met-lbl">ENGINE</div><span id="eng-val" class="val">--</span><span class="unit">HP</span></div>
-        <div class="met-item"><div class="met-lbl">VY SPEED</div><span id="vy-val" class="val">--</span><span class="unit">KTS</span></div>
-        <div class="met-item"><div class="met-lbl">RWY REC</div><span id="rwy-val" class="val">--</span><span class="unit">M</span></div>
+        <div class="met-item">
+            <div class="met-lbl">WIND DIR</div>
+            <span id="wind-dir" class="val">--</span>
+            <span class="unit">Degrees</span>
+        </div>
+        <div class="met-item">
+            <div class="met-lbl">WIND SPEED</div>
+            <span id="wind-spd" class="val">--</span>
+            <span class="unit">Knots</span>
+        </div>
+        <div class="met-item">
+            <div class="met-lbl">HEADWIND</div>
+            <span id="hw-comp" class="val">--</span>
+            <span class="unit">Knots</span>
+        </div>
+        <div class="met-item">
+            <div class="met-lbl">DENS ALT</div>
+            <span id="dens-alt" class="val">--</span>
+            <span class="unit">Feet</span>
+        </div>
+        <div class="met-item">
+            <div class="met-lbl">RWY DESIGNATION</div>
+            <span id="rwy" class="val" style="color: var(--airbus-cyan);">--</span>
+            <span class="unit">RECOMMENDED</span>
+        </div>
+        <div class="met-item">
+            <div class="met-lbl">ENVIRONMENTAL DATA</div>
+            <span id="met-cond" class="val">--</span>
+            <span class="unit">METAR INFO</span>
+        </div>
     </footer>
+    
+    <div class="copyright-bar">&copy; Gareth Thomas. Not for navigation or safety purposes. Information from open-meteo and adsb.lol.</div>
 </div>
 
 <script>
-const airfield = { lat: 53.953, lon: -1.166, elev: 16 };
+// Enhanced Database with coordinates and elevations (in meters) to allow real API calls
+const airfieldDatabase = {
+    "EGXU": { name: "Rufforth East", runways: ["05", "23"], lat: 53.953, lon: -1.166, elev: 16 },
+    "RUFFORTH EAST": { name: "Rufforth East", runways: ["05", "23"], lat: 53.953, lon: -1.166, elev: 16 },
+    "EGBX": { name: "Woburn Park", runways: ["12", "30"], lat: 51.989, lon: -0.618, elev: 95 },
+    "WOBURN PARK": { name: "Woburn Park", runways: ["12", "30"], lat: 51.989, lon: -0.618, elev: 95 },
+    "EGCA": { name: "Caernarfon", runways: ["07", "25", "02", "20"], lat: 53.103, lon: -4.332, elev: 4 },
+    "CAERNARFON": { name: "Caernarfon", runways: ["07", "25", "02", "20"], lat: 53.103, lon: -4.332, elev: 4 }
+};
+
+let cachedWeather = null;
+let lastCoords = "";
 
 function openNav() { document.getElementById("mySidebar").style.width = "350px"; }
 function closeNav() { document.getElementById("mySidebar").style.width = "0"; }
 
-function syncWeight(type, val) {
-    if(type === 'pilot') { document.getElementById('pilotSlider').value = val; document.getElementById('pilotWeight').value = val; }
-    if(type === 'passenger') { document.getElementById('passengerSlider').value = val; document.getElementById('passengerWeight').value = val; }
-    if(type === 'fuel') { document.getElementById('fuelSlider').value = val; document.getElementById('fuelLoad').value = val; }
+function syncWeight(type, value) {
+    let numVal = parseInt(value) || 0;
+    
+    if (type === 'pilot') {
+        document.getElementById('pilotSlider').value = numVal;
+        document.getElementById('pilotWeight').value = numVal;
+        document.getElementById('val-pilot').innerText = numVal + " kg";
+    } else if (type === 'passenger') {
+        document.getElementById('passengerSlider').value = numVal;
+        document.getElementById('passengerWeight').value = numVal;
+        document.getElementById('val-passenger').innerText = numVal + " kg";
+    } else if (type === 'baggage') {
+        document.getElementById('baggageSlider').value = numVal;
+        document.getElementById('baggageWeight').value = numVal;
+        document.getElementById('val-baggage').innerText = numVal + " kg";
+    } else if (type === 'fuel') {
+        document.getElementById('fuelSlider').value = numVal;
+        document.getElementById('fuelLoad').value = numVal;
+        document.getElementById('val-fuel').innerText = numVal + " L";
+    }
+    
+    // Automatically recalculate on slider adjustment
     calculateFlightSafety();
+}
+
+// Function to pull real-time weather via the Open-Meteo API (with caching for live sliders)
+async function fetchRealWeather(lat, lon) {
+    const coordKey = lat + "," + lon;
+    if (cachedWeather && lastCoords === coordKey) {
+        return cachedWeather;
+    }
+
+    try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,surface_pressure,wind_speed_10m,wind_direction_10m&wind_speed_unit=kn`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("API Network Error");
+        const data = await res.json();
+        
+        cachedWeather = {
+            heading: data.current.wind_direction_10m,
+            speed: Math.round(data.current.wind_speed_10m),
+            temp: data.current.temperature_2m,
+            qnh: Math.round(data.current.surface_pressure), 
+            text: `OAT ${data.current.temperature_2m}°C, QNH ${Math.round(data.current.surface_pressure)}`
+        };
+        lastCoords = coordKey;
+        return cachedWeather;
+    } catch (error) {
+        console.error("Failed to fetch weather. Falling back to ISA conditions.", error);
+        return { heading: 270, speed: 10, temp: 15, qnh: 1013, text: "API FAILED (ISA EST)" };
+    }
+}
+
+function calculateBestRunway(runways, windHeading) {
+    if (!runways || runways.length === 0) return "N/A";
+    let bestRunway = runways[0];
+    let minDifference = 180;
+
+    runways.forEach(rw => {
+        const rwHeading = parseInt(rw, 10) * 10;
+        let diff = Math.abs(rwHeading - windHeading);
+        if (diff > 180) diff = 360 - diff;
+        
+        if (diff < minDifference) {
+            minDifference = diff;
+            bestRunway = rw;
+        }
+    });
+    return bestRunway;
 }
 
 function saveConfiguration() {
     const config = {
-        baseRoll: document.getElementById('pohBaseRoll').value,
-        engineHP: document.getElementById('pohEngineHP').value,
-        climbVy: document.getElementById('pohClimbVy').value,
-        emptyWeight: document.getElementById('emptyWeight').value,
-        maxWeight: document.getElementById('maxWeight').value
+        registration: document.getElementById('aircraftReg').value.toUpperCase(),
+        model: document.getElementById('aircraftModel').value,
+        homeAirfield: document.getElementById('homeAirfield').value.trim().toUpperCase(),
+        emptyWeight: parseFloat(document.getElementById('emptyWeight').value) || 275,
+        maxWeight: parseFloat(document.getElementById('maxWeight').value) || 450,
+        maxUsefulLoad: parseFloat(document.getElementById('maxUsefulLoad').value) || 175,
+        maxPower: parseFloat(document.getElementById('maxPower').value) || 100,
+        sltod: parseFloat(document.getElementById('sltod').value) || 120,
+        slroc: parseFloat(document.getElementById('slroc').value) || 500,
+        cruiseSpeed: parseFloat(document.getElementById('cruiseSpeed').value) || 75,
+        daMultiplier: parseFloat(document.getElementById('daMultiplier').value) || 0.10,
+        headwindBenefit: parseFloat(document.getElementById('headwindBenefit').value) || 1.5,
+        tailwindPenalty: parseFloat(document.getElementById('tailwindPenalty').value) || 4.0,
+        safetyFactor: parseFloat(document.getElementById('safetyFactor').value) || 1.3
     };
+    
     localStorage.setItem('aircraftConfig', JSON.stringify(config));
-    closeNav();
+    
+    const btn = document.getElementById("btn-save");
+    btn.innerText = "SETTINGS SAVED!";
+    setTimeout(() => { 
+        btn.innerText = "SAVE & APPLY"; 
+        closeNav(); 
+    }, 800);
+    
+    document.getElementById('outReg').innerText = config.registration;
     calculateFlightSafety();
 }
 
-function loadConfig() {
+function loadSavedConfigOnStartup() {
     const saved = localStorage.getItem('aircraftConfig');
     if (saved) {
-        const c = JSON.parse(saved);
-        document.getElementById('pohBaseRoll').value = c.baseRoll;
-        document.getElementById('pohEngineHP').value = c.engineHP;
-        document.getElementById('pohClimbVy').value = c.climbVy;
-        document.getElementById('emptyWeight').value = c.emptyWeight;
-        document.getElementById('maxWeight').value = c.maxWeight;
+        const config = JSON.parse(saved);
+        document.getElementById('aircraftReg').value = config.registration || "G-IROI";
+        document.getElementById('aircraftModel').value = config.model || "MTO-Sport 914 Turbo";
+        document.getElementById('homeAirfield').value = config.homeAirfield || "EGXU";
+        document.getElementById('emptyWeight').value = config.emptyWeight || 275;
+        document.getElementById('maxWeight').value = config.maxWeight || 450;
+        document.getElementById('maxUsefulLoad').value = config.maxUsefulLoad || 175;
+        document.getElementById('maxPower').value = config.maxPower || 100;
+        document.getElementById('sltod').value = config.sltod || 120;
+        document.getElementById('slroc').value = config.slroc || 500;
+        document.getElementById('cruiseSpeed').value = config.cruiseSpeed || 75;
+        document.getElementById('daMultiplier').value = config.daMultiplier || 0.10;
+        document.getElementById('headwindBenefit').value = config.headwindBenefit || 1.5;
+        document.getElementById('tailwindPenalty').value = config.tailwindPenalty || 4.0;
+        document.getElementById('safetyFactor').value = config.safetyFactor || 1.3;
+        document.getElementById('outReg').innerText = config.registration || "G-IROI";
+    } else {
+        document.getElementById('outReg').innerText = "G-IROI";
     }
+    syncWeight('pilot', document.getElementById('pilotWeight').value);
+    syncWeight('passenger', document.getElementById('passengerWeight').value);
+    syncWeight('baggage', document.getElementById('baggageWeight').value);
+    syncWeight('fuel', document.getElementById('fuelLoad').value);
+    
     calculateFlightSafety();
 }
 
+// Enhanced performance calculations with aircraft-specific parameters
 async function calculateFlightSafety() {
+    let statusElement = document.getElementById('outStatus');
+    let titleStatusElement = document.getElementById('header-status');
+    let runwayReqElement = document.getElementById('outRunwayReq');
+    
     const saved = localStorage.getItem('aircraftConfig');
-    const c = saved ? JSON.parse(saved) : { baseRoll: 150, engineHP: 115, climbVy: 60, emptyWeight: 260, maxWeight: 500 };
-    
-    // UI POH Values
-    document.getElementById('eng-val').innerText = c.engineHP;
-    document.getElementById('vy-val').innerText = c.climbVy;
+    let config = saved ? JSON.parse(saved) : {
+        homeAirfield: document.getElementById('homeAirfield').value.trim().toUpperCase(),
+        emptyWeight: parseFloat(document.getElementById('emptyWeight').value) || 275,
+        maxWeight: parseFloat(document.getElementById('maxWeight').value) || 450,
+        maxUsefulLoad: parseFloat(document.getElementById('maxUsefulLoad').value) || 175,
+        maxPower: parseFloat(document.getElementById('maxPower').value) || 100,
+        sltod: parseFloat(document.getElementById('sltod').value) || 120,
+        slroc: parseFloat(document.getElementById('slroc').value) || 500,
+        cruiseSpeed: parseFloat(document.getElementById('cruiseSpeed').value) || 75,
+        daMultiplier: parseFloat(document.getElementById('daMultiplier').value) || 0.10,
+        headwindBenefit: parseFloat(document.getElementById('headwindBenefit').value) || 1.5,
+        tailwindPenalty: parseFloat(document.getElementById('tailwindPenalty').value) || 4.0,
+        safetyFactor: parseFloat(document.getElementById('safetyFactor').value) || 1.3
+    };
 
-    const totalWeight = parseFloat(c.emptyWeight) + parseFloat(document.getElementById('pilotWeight').value) + parseFloat(document.getElementById('passengerWeight').value) + (parseFloat(document.getElementById('fuelLoad').value) * 0.72);
-    document.getElementById('outTotalWeight').innerText = Math.round(totalWeight) + " kg";
-    
-    // Weather fetch
-    let densityAlt = 0;
-    try {
-        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${airfield.lat}&longitude=${airfield.lon}&current=temperature_2m`);
-        const w = await res.json();
-        densityAlt = Math.round((airfield.elev * 3.28) + (120 * (w.current.temperature_2m - 15)));
-    } catch(e) { densityAlt = airfield.elev * 3.28; }
-    
-    document.getElementById('dens-alt').innerText = densityAlt;
+    const airfieldKey = config.homeAirfield || "EGXU";
+    const emptyWeight = config.emptyWeight;
+    const maxWeight = config.maxWeight;
+    const maxUsefulLoad = config.maxUsefulLoad;
+    const sltod = config.sltod;
+    const daMultiplier = config.daMultiplier;
+    const headwindBenefit = config.headwindBenefit;
+    const tailwindPenalty = config.tailwindPenalty;
+    const safetyFactor = config.safetyFactor;
 
-    // Calculation using POH Parameters
-    const weightFactor = (totalWeight / parseFloat(c.emptyWeight));
-    const daFactor = 1 + (Math.max(0, densityAlt) / 10000);
-    const hpFactor = (115 / parseFloat(c.engineHP)); // Normalize against 115hp baseline
+    const pilotWeight = parseFloat(document.getElementById('pilotWeight').value) || 0;
+    const passengerWeight = parseFloat(document.getElementById('passengerWeight').value) || 0;
+    const baggageWeight = parseFloat(document.getElementById('baggageWeight').value) || 0;
+    const fuelLitres = parseFloat(document.getElementById('fuelLoad').value) || 0;
+    const fuelWeight = Math.round(fuelLitres * 0.72);
     
-    const reqRoll = Math.round(parseFloat(c.baseRoll) * weightFactor * daFactor * hpFactor);
+    const totalWeight = emptyWeight + pilotWeight + passengerWeight + baggageWeight + fuelWeight;
+    const payloadWeight = pilotWeight + passengerWeight + baggageWeight + fuelWeight;
     
-    document.getElementById('outRunwayReq').innerText = reqRoll + " M";
-    document.getElementById('rwy-val').innerText = reqRoll;
+    document.getElementById('outTotalWeight').innerText = totalWeight + " kg / " + maxWeight + " kg";
+    document.getElementById('outFuelWeight').innerText = fuelWeight + " kg";
+
+    const airfield = airfieldDatabase[airfieldKey];
     
-    const isOk = totalWeight <= parseFloat(c.maxWeight);
-    document.getElementById('outStatus').innerHTML = isOk ? '<span class="status-ok">SAFE</span>' : '<span class="status-not-ok">EXCESS WEIGHT</span>';
+    let finalStatusHtml = '';
+
+    if (airfield) {
+        document.getElementById('outAirfield').innerText = airfield.name + " (" + airfieldKey + ")";
+        document.getElementById('outRunways').innerText = airfield.runways.join(" / ");
+        
+        // Fetch Live Weather using Airfield Coordinates
+        const weather = await fetchRealWeather(airfield.lat, airfield.lon);
+        
+        document.getElementById('wind-dir').innerText = weather.heading + "°";
+        document.getElementById('wind-spd').innerText = weather.speed + " KT";
+        document.getElementById('met-cond').innerText = weather.text;
+
+        const bestRunway = calculateBestRunway(airfield.runways, weather.heading);
+        document.getElementById('rwy').innerText = bestRunway;
+
+        // --- ADVANCED PERFORMANCE CALCULATIONS ---
+        
+        // 1. Calculate Density Altitude
+        const elevFt = airfield.elev * 3.28084;
+        const pressureAltitude = elevFt + (1013 - weather.qnh) * 30; 
+        const isaTemp = 15 - (2 * (elevFt / 1000));
+        const densityAltitude = Math.round(pressureAltitude + 120 * (weather.temp - isaTemp));
+        document.getElementById('dens-alt').innerText = densityAltitude;
+        
+        // 2. Calculate Headwind Component for the chosen runway
+        const rwyHeading = parseInt(bestRunway, 10) * 10;
+        const windAngleRad = weather.heading * (Math.PI / 180);
+        const rwyAngleRad = rwyHeading * (Math.PI / 180);
+        const headwindComponent = Math.round(weather.speed * Math.cos(windAngleRad - rwyAngleRad));
+        document.getElementById('hw-comp').innerText = headwindComponent;
+
+        // 3. Weight Check
+        const weightPenalty = totalWeight > maxWeight ? totalWeight - maxWeight : 0;
+        
+        // 4. Payload Utilization Ratio (for performance modeling)
+        const payloadRatio = payloadWeight / maxUsefulLoad;
+        
+        // 5. Improved Takeoff Distance Calculation
+        // Start with Sea Level TOD and scale for actual conditions
+        let adjustedTod = sltod;
+        
+        // Adjust for weight: Quadratic scaling is more realistic than linear
+        // At max weight, TOD increases significantly
+        const weightFactor = 1 + (Math.pow((totalWeight - emptyWeight) / (maxWeight - emptyWeight), 1.5)) * 0.8;
+        adjustedTod *= weightFactor;
+        
+        // Density altitude penalty: +10% per 1000ft DA approximation
+        const daFactor = 1 + (Math.max(0, densityAltitude) / 10000) * (daMultiplier * 10);
+        adjustedTod *= daFactor;
+        
+        // Wind adjustment
+        let windFactor = 1.0;
+        if (headwindComponent > 0) {
+            // Headwind helps: reduces required distance
+            windFactor = Math.max(0.5, 1 - (headwindComponent * (headwindBenefit / 100)));
+        } else if (headwindComponent < 0) {
+            // Tailwind hurts: increases required distance
+            windFactor = 1 + (Math.abs(headwindComponent) * (tailwindPenalty / 100));
+        }
+        adjustedTod *= windFactor;
+        
+        // Apply safety factor
+        let requiredRunway = Math.round(adjustedTod * safetyFactor);
+        runwayReqElement.innerText = requiredRunway + " Meters";
+
+        // 6. Rate of Climb Degradation
+        const baseRoc = parseFloat(config.slroc);
+        let rocFactor = 1 - (payloadRatio * 0.4); // Up to 40% ROC loss at max payload
+        rocFactor *= (1 - (Math.max(0, densityAltitude) / 50000)); // Density altitude effect
+        const estimatedRoc = Math.max(100, Math.round(baseRoc * rocFactor));
+
+        // 7. Determine final safety status based on multiple factors
+        let statusReason = "";
+        
+        if (weightPenalty > 0) {
+            finalStatusHtml = '<span class="status-text status-not-ok">NOT OK (OVERWEIGHT)</span>';
+            statusReason = `Exceeds max by ${weightPenalty}kg`;
+        } else if (requiredRunway > 1500) {
+            finalStatusHtml = '<span class="status-text status-not-ok">NOT OK (PERF LIMIT)</span>';
+            statusReason = `Runway requirement ${requiredRunway}m excessive`;
+        } else if (estimatedRoc < 150) {
+            finalStatusHtml = '<span class="status-text status-not-ok">NOT OK (CLB LIMIT)</span>';
+            statusReason = `Climb rate degraded to ${estimatedRoc}ft/min`;
+        } else if (totalWeight >= (maxWeight * 0.90)) {
+            finalStatusHtml = '<span class="status-text status-marginal">MARGINAL</span>';
+            statusReason = `Weight @ ${(totalWeight/maxWeight*100).toFixed(1)}% of limit`;
+        } else if (requiredRunway > 1000) {
+            finalStatusHtml = '<span class="status-text status-marginal">MARGINAL</span>';
+            statusReason = `Runway requirement ${requiredRunway}m`;
+        } else if (estimatedRoc < 300) {
+            finalStatusHtml = '<span class="status-text status-marginal">MARGINAL</span>';
+            statusReason = `Climb rate ${estimatedRoc}ft/min`;
+        } else {
+            finalStatusHtml = '<span class="status-text status-ok">OK</span>';
+            statusReason = `All parameters within limits`;
+        }
+
+    } else {
+        document.getElementById('outAirfield').innerText = airfieldKey;
+        document.getElementById('outRunways').innerText = "--";
+        document.getElementById('dens-alt').innerText = "--";
+        document.getElementById('hw-comp').innerText = "--";
+        runwayReqElement.innerText = "N/A";
+        
+        // Fallback checks if airfield isn't found
+        if (totalWeight > maxWeight) {
+            finalStatusHtml = '<span class="status-text status-not-ok">NOT OK (OVERWEIGHT)</span>';
+        } else if (totalWeight >= (maxWeight * 0.85)) {
+            finalStatusHtml = '<span class="status-text status-marginal">MARGINAL</span>';
+        } else {
+            finalStatusHtml = '<span class="status-text status-ok">OK</span>';
+        }
+    }
+    
+    // Apply final status to both the table and the header title
+    statusElement.innerHTML = finalStatusHtml;
+    titleStatusElement.innerHTML = "- " + finalStatusHtml;
 }
 
-window.onload = loadConfig;
+window.onload = loadSavedConfigOnStartup;
 </script>
+
 </body>
 </html>
